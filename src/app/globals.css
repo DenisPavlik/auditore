@@ -133,10 +133,10 @@ body {
   }
 }
 
-/* The pointer is a goose quill; dipped in ink over anything clickable. */
+/* The pointer is a table fork; over anything clickable it has an olive on it. */
 @media (pointer: fine) {
   html {
-    cursor: url("/cursor/quill.svg") 2 30, auto;
+    cursor: url("/cursor/fork.svg") 11 7, auto;
   }
 
   a,
@@ -147,7 +147,7 @@ body {
   [role="button"],
   [role="radio"],
   [role="tab"] {
-    cursor: url("/cursor/quill-ink.svg") 2 30, pointer;
+    cursor: url("/cursor/fork-olive.svg") 11 7, pointer;
   }
 
   input,
@@ -157,7 +157,7 @@ body {
   }
 }
 
-/* A drop of the season's pigment where the quill touches the page. */
+/* A drop of the season's pigment where the page is touched. */
 .ink-blot {
   position: fixed;
   z-index: 60;

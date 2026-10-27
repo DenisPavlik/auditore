@@ -3,6 +3,7 @@ import { EB_Garamond, Marcellus } from "next/font/google";
 
 import { InkBlots } from "@/components/atmosphere/ink-blots";
 import { SeasonParticles } from "@/components/atmosphere/season-particles";
+import { LaVolpe } from "@/components/volpe/la-volpe";
 import { seasonBootScript } from "@/lib/seasons";
 
 import "./globals.css";
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col">
         {children}
+        <LaVolpe />
         <SeasonParticles layer="far" />
         <SeasonParticles layer="near" />
         <InkBlots />

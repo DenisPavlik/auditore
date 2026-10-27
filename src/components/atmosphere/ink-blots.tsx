@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 
 /**
- * Where the quill touches the page it leaves a small bloom of the season's
- * pigment that spreads and dries away. Mouse only, never under reduced motion.
+ * A click leaves a small bloom of the season's pigment on the page that
+ * spreads and dries away. Mouse only, never under reduced motion.
  */
 export function InkBlots() {
   useEffect(() => {

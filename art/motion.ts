@@ -53,3 +53,17 @@ CLIPS.push(
     input: { duration: "5", resolution: "720p", aspect_ratio: "1:1", generate_audio: false },
   })),
 );
+
+// The same loops on chroma green, keyed to transparency so La Volpe can stand
+// full height on the page itself rather than inside a medallion.
+const VOLPE_GREEN_STAGE = `Locked-off static camera on a hand-drawn ink and watercolour illustration of La Volpe, a fox head waiter, standing in front of a flat, solid, evenly lit chroma-key green background. The green stays perfectly uniform for the whole clip: no texture, no shadows, no gradients, no light changes on it. The drawing style and line work never change or morph; the fox stays in the same place, the same size and the same pose throughout, and only small living movements happen:`;
+
+CLIPS.push(
+  ...Object.entries(VOLPE_MOTION).map(([pose, motion]) => ({
+    id: `volpe-green/${pose}`,
+    endpoint: "bytedance/seedance-2.0/image-to-video",
+    image: `art/approved/volpe-${pose}-green.png`,
+    prompt: `${VOLPE_GREEN_STAGE} ${motion} The clip ends exactly as it begins.`,
+    input: { duration: "5", resolution: "720p", aspect_ratio: "1:1", generate_audio: false },
+  })),
+);
