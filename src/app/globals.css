@@ -152,7 +152,7 @@ body {
   z-index: 70;
   pointer-events: none;
   opacity: 0;
-  will-change: transform;
+  will-change: translate;
 }
 
 .pigment-dot {
@@ -255,6 +255,20 @@ body {
   to {
     transform: translate(var(--dx), var(--dy));
   }
+}
+
+/* A link underlined in pencil that is inked over in the season's pigment on hover. */
+.ink-link {
+  background:
+    linear-gradient(var(--accent), var(--accent)) 0 100% / 0% 1.5px no-repeat,
+    linear-gradient(color-mix(in oklab, var(--ink) 25%, transparent), color-mix(in oklab, var(--ink) 25%, transparent)) 0 100% / 100% 1px no-repeat;
+  padding-bottom: 2px;
+  transition: background-size 500ms cubic-bezier(0.3, 0.7, 0.2, 1), color 300ms;
+}
+
+.ink-link:hover {
+  color: var(--accent-ink);
+  background-size: 100% 1.5px, 100% 1px;
 }
 
 /* A line written in ink: revealed left to right, the wet edge still soft. */

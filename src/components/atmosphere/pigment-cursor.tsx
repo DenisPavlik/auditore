@@ -32,8 +32,9 @@ export function PigmentCursor() {
       if (event.pointerType !== "mouse") return;
       target.x = event.clientX;
       target.y = event.clientY;
-      // The dot follows the hand exactly, with no lag.
-      dotEl!.style.transform = `translate(${target.x}px, ${target.y}px)`;
+      // The dot follows the hand exactly, with no lag. Position goes in `translate`, not
+      // `transform`, so the CSS `scale` on hover and press shrinks it in place.
+      dotEl!.style.translate = `${target.x}px ${target.y}px`;
       const el = event.target instanceof Element ? event.target : null;
       show(!el?.closest(TEXT));
       const hover = Boolean(el?.closest(CLICKABLE));
@@ -48,7 +49,7 @@ export function PigmentCursor() {
       const ease = motion.matches ? 1 : 0.2;
       pos.x += (target.x - pos.x) * ease;
       pos.y += (target.y - pos.y) * ease;
-      ringEl!.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+      ringEl!.style.translate = `${pos.x}px ${pos.y}px`;
       frame = requestAnimationFrame(tick);
     }
 

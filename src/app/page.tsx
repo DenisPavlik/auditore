@@ -1,12 +1,23 @@
 import type { CSSProperties } from "react";
 
 import { HeroScene } from "@/components/hero/hero-scene";
+import { FourSeasons } from "@/components/home/four-seasons";
+import { Flourish, SectionHeading } from "@/components/home/section-heading";
+import { Terrace } from "@/components/home/terrace";
+import { Visit } from "@/components/home/visit";
 import { SeasonSwitcher } from "@/components/season/season-switcher";
 import { formatPrice, getMenu } from "@/lib/menu";
-import { SEASON_META, SEASONS } from "@/lib/seasons";
+import { SEASON_META, SEASONS, type Season } from "@/lib/seasons";
 
-// The living hero over the season engine. The rest of the home page (story,
-// terrace status, gallery teaser, hours) arrives in phase 4.
+const SEASON_LINES: Record<Season, string> = {
+  autumn: "What the vine and the woods bring in.",
+  winter: "Slow pots for the cold months.",
+  spring: "The first green things from the market.",
+  summer: "Cold plates for the long evenings.",
+};
+
+// The living hero, then the house: its story, the season's specials, the same
+// table through the year, the terrace today, and when and where to come.
 export default async function Home() {
   const menu = await getMenu();
   const specials = menu.find((c) => c.slug === "stagione")?.items ?? [];
@@ -59,27 +70,77 @@ export default async function Home() {
         />
       </section>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-20 pb-24 sm:px-10">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-24 pb-28 sm:px-10">
+        <section aria-labelledby="story-title" className="grid gap-8 lg:grid-cols-[2fr_3fr] lg:gap-16">
+          <SectionHeading id="story-title" eyebrow="La Storia">
+            Bankers first, cooks ever since.
+          </SectionHeading>
+          <div className="space-y-5 text-xl leading-relaxed text-ink/80 lg:pt-9">
+            <p>
+              In 1459 Giovanni Auditore kept the accounts of half of Florence and the best table in the Oltrarno. The
+              bank is long gone. The table stayed.
+            </p>
+            <p>
+              His family still cooks what the hills around the city give each season, and nothing they don&rsquo;t:
+              chestnuts and porcini when the vine turns, ribollita when the frost comes, broad beans under the wisteria,
+              and in high summer whatever is ripest by noon.
+            </p>
+          </div>
+        </section>
+
+        <Flourish className="my-24" />
+
         <section aria-labelledby="specials-title" id="specials" className="scroll-mt-10">
-          <h2 id="specials-title" className="font-display text-sm tracking-[0.28em] text-pietra uppercase">
-            Speciali di Stagione
-          </h2>
+          <SectionHeading
+            id="specials-title"
+            eyebrow={SEASONS.map((season) => (
+              <span key={season} data-season-only={season}>
+                Speciali di {SEASON_META[season].italian}
+              </span>
+            ))}
+          >
+            {SEASONS.map((season) => (
+              <span key={season} data-season-only={season}>
+                {SEASON_LINES[season]}
+              </span>
+            ))}
+          </SectionHeading>
           {SEASONS.map((season) => (
-            <ul key={season} data-season-only={season} className="mt-6 divide-y divide-ink/10 border-y border-ink/10">
+            <ul key={season} data-season-only={season} className="mt-10 space-y-7">
               {specials
                 .filter((item) => item.season === season)
                 .map((item) => (
-                  <li key={item.id} className="flex items-baseline gap-6 py-5">
-                    <div className="flex-1">
-                      <p className="text-2xl">{item.name}</p>
-                      <p className="mt-1 text-lg text-ink/70 italic">{item.description}</p>
-                    </div>
-                    <p className="text-xl text-accent-ink tabular-nums">{formatPrice(item.priceCents)}</p>
+                  <li key={item.id}>
+                    <p className="flex items-baseline gap-3 text-2xl">
+                      <span>{item.name}</span>
+                      {/* A dotted leader to the price, as on a written menu. */}
+                      <span aria-hidden className="flex-1 translate-y-[-0.3em] border-b border-dotted border-ink/30" />
+                      <span className="text-accent-ink tabular-nums">{formatPrice(item.priceCents)}</span>
+                    </p>
+                    <p className="mt-1 max-w-2xl text-lg text-ink/70 italic">{item.description}</p>
                   </li>
                 ))}
             </ul>
           ))}
         </section>
+
+        <Flourish className="my-24" />
+
+        <section aria-labelledby="seasons-title">
+          <SectionHeading id="seasons-title" eyebrow="Lo stesso tavolo">
+            One table, four seasons.
+          </SectionHeading>
+          <p className="mt-5 max-w-xl text-xl leading-relaxed text-ink/80">
+            The same corner of the loggia through the year. Choose one and the whole house turns with it.
+          </p>
+          <FourSeasons />
+        </section>
+
+        <div className="my-24">
+          <Terrace />
+        </div>
+
+        <Visit />
       </main>
 
       <footer className="px-4 py-8 text-center text-sm text-pietra italic sm:px-10">
