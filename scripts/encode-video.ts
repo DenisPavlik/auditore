@@ -4,6 +4,7 @@
  *
  *   bun scripts/encode-video.ts <in.mp4> <out-basename> [poster-still.png]
  *   bun scripts/encode-video.ts art/drafts/video/hero/autumn.1.mp4 public/hero/autumn art/approved/hero-autumn-16x9.png
+ *   VIDEO_WIDTH=480 bun scripts/encode-video.ts art/drafts/video/volpe/scrive.1.mp4 public/volpe/scrive art/approved/volpe-scrive-medallion.png
  *
  * Needs ffmpeg, ffprobe and cwebp on PATH.
  */
@@ -18,7 +19,7 @@ if (!input || !out) {
   process.exit(1);
 }
 
-const WIDTH = 1600;
+const WIDTH = Number(process.env.VIDEO_WIDTH ?? 1600);
 const FADE = 0.6;
 
 const duration = Number((await $`ffprobe -v error -show_entries format=duration -of csv=p=0 ${input}`.text()).trim());
