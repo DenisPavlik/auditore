@@ -103,8 +103,61 @@ body {
   }
 }
 
+/*
+ * Hero painting. The still is chosen by CSS so only the current season's file
+ * loads and the first paint is already right; the loop fades in over it.
+ * Edges are masked so the painting dissolves into the page's own paper.
+ */
+.hero-scene {
+  --hero-focus: 72% top;
+  mask-image:
+    linear-gradient(to right, transparent, #000 7%, #000 96%, transparent),
+    linear-gradient(to bottom, #000 82%, transparent);
+  mask-composite: intersect;
+}
+
+.hero-poster {
+  background: var(--hero-poster) var(--hero-focus) / cover no-repeat;
+}
+
+[data-season="autumn"] .hero-poster { --hero-poster: url("/hero/autumn.webp"); }
+[data-season="winter"] .hero-poster { --hero-poster: url("/hero/winter.webp"); }
+[data-season="spring"] .hero-poster { --hero-poster: url("/hero/spring.webp"); }
+[data-season="summer"] .hero-poster { --hero-poster: url("/hero/summer.webp"); }
+
+@media (width >= 64rem) {
+  .hero-scene {
+    /* Anchor right so any crop eats the paper margin, not the empty third the headline needs. */
+    --hero-focus: right top;
+  }
+}
+
+/* A line written in ink: revealed left to right, the wet edge still soft. */
+@keyframes ink-in {
+  from {
+    mask-position: 100% 0;
+    filter: blur(2px);
+  }
+  to {
+    mask-position: 0 0;
+    filter: blur(0);
+  }
+}
+
+.ink-in {
+  mask-image: linear-gradient(90deg, #000 42%, transparent 58%);
+  mask-size: 240% 100%;
+  mask-position: 100% 0;
+  animation: ink-in 1800ms cubic-bezier(0.3, 0.6, 0.2, 1) var(--ink-delay, 0ms) forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   body {
     transition: none;
+  }
+
+  .ink-in {
+    animation: none;
+    mask-image: none;
   }
 }

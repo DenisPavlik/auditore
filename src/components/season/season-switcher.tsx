@@ -37,7 +37,7 @@ export function SeasonSwitcher() {
       role="radiogroup"
       aria-label="Season"
       onKeyDown={onKeyDown}
-      className="flex items-center sm:gap-1"
+      className="flex items-center rounded-full bg-intonaco/75 p-0.5 shadow-[0_1px_0_rgb(42_32_25/0.06)] ring-1 ring-ink/8 backdrop-blur-sm sm:gap-1"
     >
       {SEASONS.map((season, i) => {
         const Icon = SEASON_ICONS[season];

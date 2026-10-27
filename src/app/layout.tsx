@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { EB_Garamond, Marcellus } from "next/font/google";
 
+import { SeasonParticles } from "@/components/atmosphere/season-particles";
 import { seasonBootScript } from "@/lib/seasons";
 
 import "./globals.css";
@@ -38,7 +39,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: seasonBootScript }} />
       </head>
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {children}
+        <SeasonParticles layer="far" />
+        <SeasonParticles layer="near" />
+      </body>
     </html>
   );
 }

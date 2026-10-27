@@ -73,6 +73,62 @@ Constraints: ${NO_TEXT}, no people.
 ${STYLE}`,
     }),
   ),
+  ...(
+    [
+      [
+        "autumn",
+        `nine separate autumn leaves from the Tuscan countryside: two grapevine leaves, two sweet chestnut leaves, two plane tree leaves, one oak leaf, one fig leaf, one olive sprig with three leaves. Each leaf at a different stage of turning: ochre, rust, burnt sienna, wine red, a little faded green at the veins.`,
+      ],
+      [
+        "winter",
+        `nine separate snowflakes and ice crystals studied as if under a lens, in the manner of Leonardo's nature studies: six-armed stellar flakes, a plate crystal, a needle cluster, a fern-like dendrite, each one different. Drawn in fine ultramarine and sepia ink lines with a pale ultramarine and silver-grey wash inside, so they read clearly on warm cream paper.`,
+      ],
+      [
+        "spring",
+        `nine separate spring petals and florets: three single lilac wisteria florets, two pale pink almond blossom petals, one whole five-petalled almond blossom, two red poppy petals with a soft crumpled edge, one small white daisy head. Delicate, slightly curled, each seen from a different angle.`,
+      ],
+      [
+        "summer",
+        `nine separate summer leaves from a Tuscan grove: five narrow olive leaves, each a different curve and tilt, silver-green on one side and darker green-grey on the other, one small olive sprig with two leaves and a single green olive, two glossy lemon leaves, one small white lemon blossom.`,
+      ],
+    ] as const
+  ).map(
+    ([season, subject]): ImagePrompt => ({
+      id: `particles/${season}`,
+      size: "1024x1024",
+      quality: "high",
+      transparent: true,
+      prompt: `Subject: a botanical study sheet of ${subject}
+Important Details: arranged in a loose 3 by 3 grid with wide empty space around every element so each can be cut out on its own; each drawn flat and whole, crisp outer silhouette, fine ink detail, watercolour bleeding gently inside the outline. Every element isolated on a fully transparent background with no paper, no texture and no wash behind it.
+Use Case: sprite sheet for gently falling particles over a website.
+Constraints: every element fully separated from the others with nothing touching or overlapping, no shadows, ${NO_TEXT}.
+${STYLE}`,
+    }),
+  ),
+  // La Volpe's poses for the chat assistant: each one is a state of the conversation.
+  ...(
+    [
+      ["benvenuto", "greeting a guest: a small courteous bow, his left paw on his chest, the right paw raised in a friendly wave, eyes warm and bright."],
+      ["ascolta", "listening closely: leaning slightly forward, head tilted, one ear turned toward the viewer, a paw cupped behind that ear, eyes attentive and curious."],
+      ["scrive", "taking an order: looking down at a small notepad held in his left paw and writing in it with a pencil, ears relaxed, a small concentrated smile."],
+      ["consiglia", "recommending a dish: holding the open leather menu toward the viewer with his left paw and pointing at a line in it with his right, a sly knowing smile, one eyebrow raised."],
+      ["pensa", "thinking it over: one paw under his chin, eyes turned up and to the side, tail curled around his feet, a thoughtful half smile."],
+      ["brinda", "celebrating a confirmed booking: raising a glass of red wine toward the viewer in a toast, the napkin still over his arm, a wide happy smile, eyes half closed with joy."],
+    ] as const
+  ).map(
+    ([pose, action]): ImagePrompt => ({
+      id: `volpe/${pose}`,
+      size: "1024x1024",
+      quality: "high",
+      transparent: true,
+      reference: "art/approved/la-volpe.png",
+      prompt: `Draw this same character in a new pose.
+Change: the pose and expression only. La Volpe is ${action}
+Preserve: the exact same fox, same face, fur colours and markings, same white-tipped tail; the same white linen shirt, burnt-sienna waistcoat and long cream apron; the same drawing style, line weight and watercolour palette; the same size in the frame, full length, with his feet on the same baseline near the bottom of the picture, so poses can be swapped without the character jumping.
+Constraints: isolated character on a fully transparent background, soft contact shadow under the feet only, ${NO_TEXT}, no hood, no weapons, no logos.
+${STYLE}`,
+    }),
+  ),
   {
     id: "test/la-volpe",
     size: "1024x1024",

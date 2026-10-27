@@ -1,40 +1,66 @@
+import type { CSSProperties } from "react";
+
+import { HeroScene } from "@/components/hero/hero-scene";
 import { SeasonSwitcher } from "@/components/season/season-switcher";
 import { formatPrice, getMenu } from "@/lib/menu";
 import { SEASON_META, SEASONS } from "@/lib/seasons";
 
-// Foundation preview: proves the season engine and the database end to end.
-// The real home page arrives in phase 4.
+// The living hero over the season engine. The rest of the home page (story,
+// terrace status, gallery teaser, hours) arrives in phase 4.
 export default async function Home() {
   const menu = await getMenu();
   const specials = menu.find((c) => c.slug === "stagione")?.items ?? [];
 
   return (
     <>
-      <header className="flex items-center justify-between gap-3 px-4 py-5 sm:px-10">
-        <div>
-          <p className="font-display text-xl tracking-[0.24em] text-ink sm:text-2xl sm:tracking-[0.32em]">AUDITORE</p>
-          <p className="mt-0.5 text-sm italic text-pietra">Firenze · dal 1459</p>
+      <section className="relative flex flex-col lg:min-h-svh">
+        <header className="relative z-20 flex items-center justify-between gap-3 px-4 py-5 sm:px-10">
+          <div>
+            <p className="font-display text-xl tracking-[0.24em] text-ink sm:text-2xl sm:tracking-[0.32em]">AUDITORE</p>
+            <p className="mt-0.5 text-sm italic text-pietra">Firenze · dal 1459</p>
+          </div>
+          <SeasonSwitcher />
+        </header>
+
+        <div className="relative z-10 px-4 pt-10 sm:px-10 lg:flex lg:flex-1 lg:items-center lg:pt-0 lg:pb-24">
+          <div className="max-w-xl lg:max-w-[34vw]">
+            <p className="font-display text-xs tracking-[0.28em] text-accent-ink uppercase">
+              {SEASONS.map((season) => (
+                <span key={season} data-season-only={season}>
+                  {SEASON_META[season].italian} · painted in {SEASON_META[season].pigment}
+                </span>
+              ))}
+            </p>
+            <h1 className="ink-in mt-5 text-5xl leading-[1.05] text-balance italic sm:text-7xl xl:text-8xl">
+              The table changes with the season.
+            </h1>
+            <p
+              className="ink-in mt-6 max-w-sm text-xl leading-relaxed text-ink/80"
+              style={{ "--ink-delay": "700ms" } as CSSProperties}
+            >
+              Florentine cooking from the Auditore kitchen, on a menu that turns with the year.
+            </p>
+            <a
+              href="#specials"
+              className="mt-10 inline-flex items-center gap-3 font-display text-sm tracking-[0.22em] text-accent-ink uppercase underline decoration-accent/40 decoration-1 underline-offset-8 transition hover:decoration-accent"
+            >
+              This season&rsquo;s table
+              <span aria-hidden>→</span>
+            </a>
+          </div>
         </div>
-        <SeasonSwitcher />
-      </header>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-16 pb-24 sm:px-10">
-        <p className="font-display text-xs tracking-[0.28em] text-accent-ink uppercase">
-          {SEASONS.map((season) => (
-            <span key={season} data-season-only={season}>
-              {SEASON_META[season].italian} · painted in {SEASON_META[season].pigment}
-            </span>
-          ))}
-        </p>
-        <h1 className="mt-5 text-5xl leading-[1.05] text-balance italic sm:text-7xl">
-          The table changes with the season.
-        </h1>
-        <p className="mt-6 max-w-xl text-xl leading-relaxed text-ink/80">
-          Florentine cooking from the Auditore kitchen, on a menu that turns with the year.
-        </p>
+        <HeroScene className="relative mt-10 aspect-[4/3] w-full sm:aspect-video lg:absolute lg:inset-0 lg:mt-0 lg:aspect-auto" />
+        {/* A breath of the page's own paper behind the headline, so it reads over any season. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-0 hidden w-[52%] bg-linear-to-r from-wash/85 via-wash/50 to-transparent lg:block"
+        />
+      </section>
 
-        <section aria-labelledby="specials" className="mt-20">
-          <h2 id="specials" className="font-display text-sm tracking-[0.28em] text-pietra uppercase">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-20 pb-24 sm:px-10">
+        <section aria-labelledby="specials-title" id="specials" className="scroll-mt-10">
+          <h2 id="specials-title" className="font-display text-sm tracking-[0.28em] text-pietra uppercase">
             Speciali di Stagione
           </h2>
           {SEASONS.map((season) => (
