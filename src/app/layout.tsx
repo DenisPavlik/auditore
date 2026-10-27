@@ -37,6 +37,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       // The boot script sets data-season before React hydrates.
       suppressHydrationWarning
+      // Smooth for in-page anchors; Next turns it off while it changes pages.
+      data-scroll-behavior="smooth"
       className={`${garamond.variable} ${marcellus.variable} h-full antialiased`}
     >
       <head>
@@ -44,9 +46,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col">
         {children}
+        <footer className="px-4 py-8 text-center text-sm text-pietra italic sm:px-10">
+          Nulla è reale, tutto è lecito.
+        </footer>
         <LaVolpe />
-        <SeasonParticles layer="far" />
-        <SeasonParticles layer="near" />
+        <SeasonParticles layer="back" />
+        <SeasonParticles layer="front" />
         <InkBlots />
         <PigmentCursor />
       </body>

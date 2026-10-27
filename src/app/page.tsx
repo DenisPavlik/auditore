@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { CSSProperties } from "react";
 
 import { HeroScene } from "@/components/hero/hero-scene";
@@ -5,16 +6,10 @@ import { FourSeasons } from "@/components/home/four-seasons";
 import { Flourish, SectionHeading } from "@/components/home/section-heading";
 import { Terrace } from "@/components/home/terrace";
 import { Visit } from "@/components/home/visit";
-import { SeasonSwitcher } from "@/components/season/season-switcher";
-import { formatPrice, getMenu } from "@/lib/menu";
-import { SEASON_META, SEASONS, type Season } from "@/lib/seasons";
-
-const SEASON_LINES: Record<Season, string> = {
-  autumn: "What the vine and the woods bring in.",
-  winter: "Slow pots for the cold months.",
-  spring: "The first green things from the market.",
-  summer: "Cold plates for the long evenings.",
-};
+import { MenuLine } from "@/components/menu/menu-line";
+import { SiteHeader } from "@/components/site-header";
+import { getMenu } from "@/lib/menu";
+import { SEASON_LINES, SEASON_META, SEASONS } from "@/lib/seasons";
 
 // The living hero, then the house: its story, the season's specials, the same
 // table through the year, the terrace today, and when and where to come.
@@ -25,13 +20,7 @@ export default async function Home() {
   return (
     <>
       <section className="relative mx-auto flex w-full max-w-[2200px] flex-col lg:min-h-svh">
-        <header className="relative z-20 flex items-center justify-between gap-3 px-4 py-5 sm:px-10">
-          <div>
-            <p className="font-display text-xl tracking-[0.24em] text-ink sm:text-2xl sm:tracking-[0.32em]">AUDITORE</p>
-            <p className="mt-0.5 text-sm italic text-pietra">Firenze · dal 1459</p>
-          </div>
-          <SeasonSwitcher />
-        </header>
+        <SiteHeader />
 
         <div className="relative z-10 px-4 pt-10 sm:px-10 lg:flex lg:flex-1 lg:items-center lg:pt-0 lg:pb-24">
           <div className="max-w-xl lg:max-w-[min(34vw,40rem)]">
@@ -70,7 +59,7 @@ export default async function Home() {
         />
       </section>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-24 pb-28 sm:px-10">
+      <main className="mx-auto w-full max-w-5xl flex-1 lg:max-w-[min(64rem,max(40rem,calc(100vw-2*var(--fox-room))))] px-4 pt-24 pb-28 sm:px-10">
         <section aria-labelledby="story-title" className="grid gap-8 lg:grid-cols-[2fr_3fr] lg:gap-16">
           <SectionHeading id="story-title" eyebrow="La Storia">
             Bankers first, cooks ever since.
@@ -110,18 +99,16 @@ export default async function Home() {
               {specials
                 .filter((item) => item.season === season)
                 .map((item) => (
-                  <li key={item.id}>
-                    <p className="flex items-baseline gap-3 text-2xl">
-                      <span>{item.name}</span>
-                      {/* A dotted leader to the price, as on a written menu. */}
-                      <span aria-hidden className="flex-1 translate-y-[-0.3em] border-b border-dotted border-ink/30" />
-                      <span className="text-accent-ink tabular-nums">{formatPrice(item.priceCents)}</span>
-                    </p>
-                    <p className="mt-1 max-w-2xl text-lg text-ink/70 italic">{item.description}</p>
-                  </li>
+                  <MenuLine key={item.id} item={item} />
                 ))}
             </ul>
           ))}
+          <Link
+            href="/menu"
+            className="ink-link mt-10 inline-block font-display text-sm tracking-[0.22em] text-accent-ink uppercase"
+          >
+            The whole menu →
+          </Link>
         </section>
 
         <Flourish className="my-24" />
@@ -142,10 +129,6 @@ export default async function Home() {
 
         <Visit />
       </main>
-
-      <footer className="px-4 py-8 text-center text-sm text-pietra italic sm:px-10">
-        Nulla è reale, tutto è lecito.
-      </footer>
     </>
   );
 }

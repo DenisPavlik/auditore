@@ -31,7 +31,7 @@ const BEHAVIOUR: Record<Season, Behaviour> = {
   summer: { density: 4, min: 4, max: 10, size: 40, fall: 50, sway: 26, spin: 0.8, tumble: 1.2 },
 };
 
-type Layer = "far" | "near";
+type Layer = "front" | "back";
 
 type Particle = {
   /** The season whose atlas this sprite comes from. */
@@ -68,8 +68,9 @@ function atlasFor(season: Season) {
 
 function spawn(season: Season, layer: Layer, width: number, height: number, anywhere: boolean): Particle {
   const b = BEHAVIOUR[season];
-  const depth = layer === "near" ? 1 : 0.25 + Math.random() * 0.6;
-  const size = layer === "near" ? b.size * (2.6 + Math.random()) : b.size * (0.45 + depth * 0.75);
+  // The back layer drifts slowly behind the page, so it barely follows the scroll.
+  const depth = layer === "back" ? 0.2 : 0.25 + Math.random() * 0.6;
+  const size = layer === "back" ? b.size * (2.6 + Math.random()) : b.size * (0.45 + depth * 0.75);
   return {
     season,
     x: Math.random() * width,
@@ -83,22 +84,23 @@ function spawn(season: Season, layer: Layer, width: number, height: number, anyw
     spinRate: (Math.random() - 0.5) * 2 * b.spin,
     tumblePhase: Math.random() * Math.PI * 2,
     tumbleRate: b.tumble * (0.5 + Math.random()),
-    opacity: layer === "near" ? 0.9 : 0.55 + depth * 0.4,
+    opacity: layer === "back" ? 0.7 : 0.55 + depth * 0.4,
     fade: 0,
     leaving: false,
   };
 }
 
 function targetCount(season: Season, layer: Layer, width: number, height: number) {
-  if (layer === "near") return width < 640 ? 0 : season === "winter" ? 3 : 2;
+  if (layer === "back") return width < 640 ? 0 : season === "winter" ? 3 : 2;
   const b = BEHAVIOUR[season];
   return Math.round(Math.min(b.max, Math.max(b.min, (b.density * width * height) / 1e6)));
 }
 
 /**
  * The season's leaves, snow or petals drifting over the page, painted on a
- * fixed canvas. Two layers make depth: "far" carries small crisp particles,
- * "near" one or two large ones that pass close to the eye, blurred.
+ * fixed canvas. Two layers make depth: "front" carries small crisp particles
+ * over the page, "back" one or two large ones far behind it, out of focus,
+ * passing behind the text and the paintings.
  */
 export function SeasonParticles({ layer }: { layer: Layer }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -231,7 +233,7 @@ export function SeasonParticles({ layer }: { layer: Layer }) {
     <canvas
       ref={canvasRef}
       aria-hidden
-      className={`pointer-events-none fixed inset-0 z-30 size-full ${layer === "near" ? "blur-[2px]" : ""}`}
+      className={`pointer-events-none fixed inset-0 size-full ${layer === "back" ? "-z-10 blur-[2px]" : "z-30"}`}
     />
   );
 }

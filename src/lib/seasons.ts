@@ -15,6 +15,14 @@ export const SEASON_META: Record<
   summer: { label: "Summer", italian: "Estate", pigment: "Giallorino" },
 };
 
+/** What each season's specials are about, in a line. */
+export const SEASON_LINES: Record<Season, string> = {
+  autumn: "What the vine and the woods bring in.",
+  winter: "Slow pots for the cold months.",
+  spring: "The first green things from the market.",
+  summer: "Cold plates for the long evenings.",
+};
+
 /** Meteorological seasons, read on the restaurant's wall clock. */
 export function seasonForMonth(month: number): Season {
   if (month >= 3 && month <= 5) return "spring";

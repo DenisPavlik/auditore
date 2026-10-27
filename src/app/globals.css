@@ -11,6 +11,9 @@
   --pietra: #6d7a76;
   --oro: #a8843f;
 
+  /* Width La Volpe takes at the right edge on desktop (see volpe-stage.tsx), plus a gutter. */
+  --fox-room: calc(clamp(16rem, 40vh, 30rem) * 0.6 + 3rem);
+
   /* Autumn is the fallback when no season has been set yet. */
   --accent: #9a4426;
   --accent-ink: #8a3a1f;
@@ -60,6 +63,12 @@ html:not([data-season="winter"]) [data-season-only="winter"],
 html:not([data-season="spring"]) [data-season-only="spring"],
 html:not([data-season="summer"]) [data-season-only="summer"] {
   display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
@@ -254,6 +263,25 @@ body {
   }
   to {
     transform: translate(var(--dx), var(--dy));
+  }
+}
+
+/* Rises out of the paper as it scrolls into view; where scroll timelines are missing it is simply there. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+    filter: blur(2px);
   }
 }
 
