@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { EB_Garamond, Marcellus } from "next/font/google";
 
 import { InkBlots } from "@/components/atmosphere/ink-blots";
+import { PigmentCursor } from "@/components/atmosphere/pigment-cursor";
 import { SeasonParticles } from "@/components/atmosphere/season-particles";
 import { LaVolpe } from "@/components/volpe/la-volpe";
 import { seasonBootScript } from "@/lib/seasons";
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <SeasonParticles layer="far" />
         <SeasonParticles layer="near" />
         <InkBlots />
+        <PigmentCursor />
       </body>
     </html>
   );

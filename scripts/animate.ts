@@ -3,7 +3,8 @@
  *
  *   bun scripts/animate.ts <id-or-prefix> [...more]
  *
- * The still is passed as both the first and the last frame. Each run writes
+ * The still is passed as both the first and the last frame (or the clip's
+ * endImage as the last, for a move from one pose to another). Each run writes
  * art/drafts/video/<id>.<n>.mp4 and never overwrites earlier takes.
  */
 import { existsSync } from "node:fs";
@@ -27,16 +28,16 @@ const FIRST_FRAME_FIELD: Record<string, string> = {
 
 async function animate(clip: MotionClip) {
   const started = Date.now();
-  const still = await readFile(join(process.cwd(), clip.image));
-  const imageUrl = await fal.storage.upload(
-    new File([still], basename(clip.image), { type: "image/png" }),
-  );
+  const upload = async (path: string) =>
+    fal.storage.upload(new File([await readFile(join(process.cwd(), path))], basename(path), { type: "image/png" }));
+  const imageUrl = await upload(clip.image);
+  const endImageUrl = clip.endImage ? await upload(clip.endImage) : imageUrl;
 
   const result = await fal.subscribe(clip.endpoint, {
     input: {
       prompt: clip.prompt,
       [FIRST_FRAME_FIELD[clip.endpoint] ?? "image_url"]: imageUrl,
-      end_image_url: imageUrl,
+      end_image_url: endImageUrl,
       ...clip.input,
     },
     logs: false,

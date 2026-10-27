@@ -133,57 +133,127 @@ body {
   }
 }
 
-/* The pointer is a table fork; over anything clickable it has an olive on it. */
+/* <PigmentCursor> draws the pointer; the system one hides only once it does. */
 @media (pointer: fine) {
-  html {
-    cursor: url("/cursor/fork.svg") 11 7, auto;
+  html[data-cursor="pigment"],
+  html[data-cursor="pigment"] * {
+    cursor: none;
   }
 
-  a,
-  button,
-  summary,
-  label,
-  select,
-  [role="button"],
-  [role="radio"],
-  [role="tab"] {
-    cursor: url("/cursor/fork-olive.svg") 11 7, pointer;
-  }
-
-  input,
-  textarea,
-  [contenteditable="true"] {
+  html[data-cursor="pigment"] :is(input, textarea, [contenteditable="true"]) {
     cursor: text;
   }
 }
 
-/* A drop of the season's pigment where the page is touched. */
-.ink-blot {
+.pigment-cursor {
   position: fixed;
-  z-index: 60;
-  width: 36px;
-  height: 36px;
-  margin: -18px 0 0 -18px;
+  top: 0;
+  left: 0;
+  z-index: 70;
   pointer-events: none;
-  border-radius: 46% 54% 52% 48% / 56% 44% 56% 44%;
-  background: radial-gradient(
-    circle at 48% 52%,
-    color-mix(in oklab, var(--accent) 75%, transparent) 0 20%,
-    color-mix(in oklab, var(--accent) 28%, transparent) 46%,
-    transparent 68%
-  );
-  mix-blend-mode: multiply;
-  animation: ink-blot 950ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  opacity: 0;
+  will-change: transform;
 }
 
-@keyframes ink-blot {
-  from {
-    opacity: 0.9;
-    transform: rotate(var(--blot-turn, 0deg)) scale(0.2);
+.pigment-dot {
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: var(--accent-ink);
+  transition: opacity 200ms, scale 200ms;
+}
+
+.pigment-ring {
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border: 1.5px solid color-mix(in oklab, var(--accent) 65%, transparent);
+  border-radius: 47% 53% 50% 50% / 52% 48% 52% 48%;
+  background: transparent;
+  transition:
+    width 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    margin 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 300ms,
+    border-color 300ms,
+    opacity 200ms,
+    scale 160ms;
+}
+
+.pigment-dot[data-hover] {
+  scale: 0.4;
+}
+
+.pigment-ring[data-hover] {
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  border-color: color-mix(in oklab, var(--accent) 35%, transparent);
+  background-color: color-mix(in oklab, var(--accent) 18%, transparent);
+  mix-blend-mode: multiply;
+}
+
+.pigment-ring[data-press] {
+  scale: 0.82;
+}
+
+/* A watercolour drop where the page is clicked (ink-blots.tsx draws its SVG). */
+.ink-drop {
+  position: fixed;
+  z-index: 60;
+  width: 120px;
+  height: 120px;
+  margin: -60px 0 0 -60px;
+  overflow: visible;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  rotate: var(--blot-turn, 0deg);
+  animation: ink-dry 2200ms ease-in forwards;
+}
+
+.ink-drop * {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ink-drop .blot-spread {
+  animation: ink-spread 700ms cubic-bezier(0.15, 0.8, 0.25, 1) both;
+}
+
+.ink-drop .blot-late {
+  animation-delay: 160ms;
+}
+
+.ink-drop .blot-fly {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  animation: ink-fly 260ms cubic-bezier(0.1, 0.7, 0.2, 1) both;
+}
+
+/* Wet for a moment, then the pigment dries lighter and sinks into the paper. */
+@keyframes ink-dry {
+  0%,
+  35% {
+    opacity: 1;
   }
   to {
     opacity: 0;
-    transform: rotate(calc(var(--blot-turn, 0deg) + 20deg)) scale(1.5);
+  }
+}
+
+@keyframes ink-spread {
+  from {
+    transform: scale(0.15);
+  }
+}
+
+@keyframes ink-fly {
+  from {
+    transform: translate(0, 0) scale(0.3);
+  }
+  to {
+    transform: translate(var(--dx), var(--dy));
   }
 }
 
