@@ -13,7 +13,7 @@ export default async function Home() {
 
   return (
     <>
-      <section className="relative flex flex-col lg:min-h-svh">
+      <section className="relative mx-auto flex w-full max-w-[2200px] flex-col lg:min-h-svh">
         <header className="relative z-20 flex items-center justify-between gap-3 px-4 py-5 sm:px-10">
           <div>
             <p className="font-display text-xl tracking-[0.24em] text-ink sm:text-2xl sm:tracking-[0.32em]">AUDITORE</p>
@@ -23,7 +23,7 @@ export default async function Home() {
         </header>
 
         <div className="relative z-10 px-4 pt-10 sm:px-10 lg:flex lg:flex-1 lg:items-center lg:pt-0 lg:pb-24">
-          <div className="max-w-xl lg:max-w-[34vw]">
+          <div className="max-w-xl lg:max-w-[min(34vw,40rem)]">
             <p className="font-display text-xs tracking-[0.28em] text-accent-ink uppercase">
               {SEASONS.map((season) => (
                 <span key={season} data-season-only={season}>
@@ -31,7 +31,7 @@ export default async function Home() {
                 </span>
               ))}
             </p>
-            <h1 className="ink-in mt-5 text-5xl leading-[1.05] text-balance italic sm:text-7xl xl:text-8xl">
+            <h1 className="ink-in mt-5 text-5xl leading-[1.05] text-balance italic sm:text-7xl xl:text-8xl min-[1800px]:text-[7.5rem]">
               The table changes with the season.
             </h1>
             <p
@@ -50,11 +50,12 @@ export default async function Home() {
           </div>
         </div>
 
-        <HeroScene className="relative mt-10 aspect-[4/3] w-full sm:aspect-video lg:absolute lg:inset-0 lg:mt-0 lg:aspect-auto" />
+        {/* Desktop: the painting keeps its 16:9 and hangs from the right; extra width on wide screens stays paper. */}
+        <HeroScene className="relative mt-10 aspect-[4/3] w-full sm:aspect-video lg:absolute lg:inset-y-0 lg:right-0 lg:mt-0 lg:h-full lg:w-auto lg:max-w-full" />
         {/* A breath of the page's own paper behind the headline, so it reads over any season. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-0 hidden w-[52%] bg-linear-to-r from-wash/85 via-wash/50 to-transparent lg:block"
+          className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(42%_48%_at_20%_54%,color-mix(in_oklab,var(--wash)_88%,transparent),transparent)] lg:block"
         />
       </section>
 

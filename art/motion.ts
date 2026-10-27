@@ -32,3 +32,24 @@ export const CLIPS: MotionClip[] = Object.entries(HERO_MOTION).map(([season, mot
   prompt: `${CINEMAGRAPH} ${motion} The architecture, the table, everything on it, the city and the paper margins stay perfectly still and identical to the first frame. The clip ends exactly as it begins.`,
   input: { duration: "8", resolution: "1080p", aspect_ratio: "16:9", generate_audio: false },
 }));
+
+const VOLPE_STAGE = `Locked-off static camera on a hand-drawn ink and watercolour illustration of La Volpe, a fox head waiter, standing on plain paper. The drawing style, line work and paper never change or morph; the fox stays in the same place, the same size and the same pose throughout, and only small living movements happen:`;
+
+const VOLPE_MOTION: Record<string, string> = {
+  benvenuto: `his raised paw waves twice, slowly and warmly; he blinks once; his ears perk up; his tail sways gently behind him.`,
+  ascolta: `he leans in a little closer and back again, listening; the ear turned to the viewer twitches; he blinks slowly; the tip of his tail flicks.`,
+  scrive: `his pencil moves in small writing strokes across the notepad, his eyes follow the line he writes; he pauses, taps the pencil once on the pad, and writes again; his tail sways slightly.`,
+  consiglia: `his pointing paw taps the open page twice; he raises one eyebrow and gives a small sly smile; he blinks; his tail sways.`,
+  pensa: `his eyes drift slowly from one side to the other while he thinks; he taps a claw softly against his chin; his ears turn slightly; his tail curls and uncurls.`,
+  brinda: `he raises the glass of red wine a little higher in a toast and lowers it back; the wine sways in the glass; he closes his eyes happily and opens them; his tail swishes.`,
+};
+
+CLIPS.push(
+  ...Object.entries(VOLPE_MOTION).map(([pose, motion]) => ({
+    id: `volpe/${pose}`,
+    endpoint: "bytedance/seedance-2.0/image-to-video",
+    image: `art/approved/volpe-${pose}-medallion.png`,
+    prompt: `${VOLPE_STAGE} ${motion} The clip ends exactly as it begins.`,
+    input: { duration: "5", resolution: "720p", aspect_ratio: "1:1", generate_audio: false },
+  })),
+);

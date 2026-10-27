@@ -48,3 +48,4 @@ next-env.d.ts
 
 # 16:9 video inputs, rebuilt by scripts/pad-hero.py
 /art/approved/*-16x9.png
+/art/approved/*-medallion.png

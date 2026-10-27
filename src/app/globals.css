@@ -110,9 +110,10 @@ body {
  */
 .hero-scene {
   --hero-focus: 72% top;
+  /* Edges dissolve into the page's paper; the bottom fades slowly into the next section. */
   mask-image:
-    linear-gradient(to right, transparent, #000 7%, #000 96%, transparent),
-    linear-gradient(to bottom, #000 82%, transparent);
+    linear-gradient(to right, transparent, #000 14%, #000 92%, transparent),
+    linear-gradient(to bottom, #000 80%, rgb(0 0 0 / 0.55) 91%, transparent);
   mask-composite: intersect;
 }
 
@@ -129,6 +130,60 @@ body {
   .hero-scene {
     /* Anchor right so any crop eats the paper margin, not the empty third the headline needs. */
     --hero-focus: right top;
+  }
+}
+
+/* The pointer is a goose quill; dipped in ink over anything clickable. */
+@media (pointer: fine) {
+  html {
+    cursor: url("/cursor/quill.svg") 2 30, auto;
+  }
+
+  a,
+  button,
+  summary,
+  label,
+  select,
+  [role="button"],
+  [role="radio"],
+  [role="tab"] {
+    cursor: url("/cursor/quill-ink.svg") 2 30, pointer;
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"] {
+    cursor: text;
+  }
+}
+
+/* A drop of the season's pigment where the quill touches the page. */
+.ink-blot {
+  position: fixed;
+  z-index: 60;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  pointer-events: none;
+  border-radius: 46% 54% 52% 48% / 56% 44% 56% 44%;
+  background: radial-gradient(
+    circle at 48% 52%,
+    color-mix(in oklab, var(--accent) 75%, transparent) 0 20%,
+    color-mix(in oklab, var(--accent) 28%, transparent) 46%,
+    transparent 68%
+  );
+  mix-blend-mode: multiply;
+  animation: ink-blot 950ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+
+@keyframes ink-blot {
+  from {
+    opacity: 0.9;
+    transform: rotate(var(--blot-turn, 0deg)) scale(0.2);
+  }
+  to {
+    opacity: 0;
+    transform: rotate(calc(var(--blot-turn, 0deg) + 20deg)) scale(1.5);
   }
 }
 
