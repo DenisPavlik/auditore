@@ -15,6 +15,20 @@
       "when": 1793032262517,
       "tag": "0001_booking_overlap",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793131950192,
+      "tag": "0002_sour_tusk",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793292432417,
+      "tag": "0003_empty_purifiers",
+      "breakpoints": true
     }
   ]
 }

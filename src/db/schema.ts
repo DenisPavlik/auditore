@@ -194,6 +194,10 @@ export const menuItems = pgTable(
 export const galleryImages = pgTable("gallery_images", {
   id: serial("id").primaryKey(),
   url: text("url").notNull(),
+  /** The name written under the picture, e.g. "La Sala". */
+  title: text("title"),
+  /** One line about it, e.g. "Eight tables under the vault, laid before seven." */
+  caption: text("caption"),
   alt: text("alt").notNull(),
   width: integer("width").notNull(),
   height: integer("height").notNull(),

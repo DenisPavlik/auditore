@@ -285,6 +285,34 @@ body {
   }
 }
 
+/* The gallery's lightbox: the page under it stays put, and each page settles in as it opens. */
+html:has(dialog.lightbox[open]) {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lightbox[open] {
+    animation: lightbox-in 300ms ease-out;
+  }
+
+  .lightbox-image {
+    animation: page-in 450ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+}
+
+@keyframes lightbox-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+
 /* A link underlined in pencil that is inked over in the season's pigment on hover. */
 .ink-link {
   background:

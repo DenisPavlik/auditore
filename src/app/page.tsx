@@ -121,6 +121,12 @@ export default async function Home() {
             The same corner of the loggia through the year. Choose one and the whole house turns with it.
           </p>
           <FourSeasons />
+          <Link
+            href="/galleria"
+            className="ink-link mt-10 inline-block font-display text-sm tracking-[0.22em] text-accent-ink uppercase"
+          >
+            The rest of the house →
+          </Link>
         </section>
 
         <div className="my-24">

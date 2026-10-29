@@ -2,7 +2,10 @@ import Link from "next/link";
 
 import { SeasonSwitcher } from "@/components/season/season-switcher";
 
-const PAGES = [{ href: "/menu", label: "La Carta" }];
+const PAGES = [
+  { href: "/menu", label: "La Carta" },
+  { href: "/galleria", label: "La Galleria" },
+];
 
 /** The wordmark, the house's pages and the season switcher, at the top of every page. */
 export function SiteHeader() {

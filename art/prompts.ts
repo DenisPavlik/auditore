@@ -151,4 +151,72 @@ Use Case: sprite sheet for falling-leaf animation on a website.
 Constraints: every leaf fully separated from the others with nothing touching, no shadows, no stems crossing, ${NO_TEXT}.
 ${STYLE}`,
   },
+  // The gallery: the house itself, the room, the kitchen, the plates, painted like the hero but filling the page.
+  ...(
+    [
+      [
+        "sala",
+        "1536x1024",
+        `Scene: the dining room of a small old trattoria in Florence's Oltrarno on a winter evening. A low barrel-vaulted room of lime plaster and grey pietra serena arches; on the back wall a faded fresco fragment of a vine and a bird. Eight wooden tables with white linen, straw-wrapped Chianti flasks, candles in pewter sticks; two hanging copper lamps; a dark wooden sideboard with stacked plates and a bread basket; through a small arched window, the blue dusk of the street.
+Subject: the room just before service, every table laid and the candles lit, warm and inviting, one chair pulled out as if waiting for a guest.
+Important Details: viewed from the doorway at eye level, deep perspective toward the back wall; candlelight pools of lead-tin yellow and burnt sienna against cool ultramarine shadows in the vault.`,
+      ],
+      [
+        "bistecca",
+        "1536x1024",
+        `Subject: a bistecca alla fiorentina, a thick T-bone steak seared dark on the outside and rare pink inside, half sliced on a worn olive-wood board, beside a cast-iron grill over glowing oak embers. A sprig of rosemary, flakes of coarse salt, a small jug of green olive oil, a bone-handled knife, half a lemon, a glass of red wine.
+Important Details: a close still life seen from slightly above; the warm orange glow of the embers lighting the meat from below, a thin curl of smoke; rich, appetising, generous, the way a cookbook plate would show it.`,
+      ],
+      [
+        "cucina",
+        "1024x1536",
+        `Scene: the small kitchen at the back of the trattoria in morning light from a tall window. Copper pans hang on the wall, braids of garlic and dried chillies from a beam, a terracotta pot of ragù simmering on the stove.
+Subject: an old Tuscan nonna with her sleeves rolled up and a flowered apron, rolling pici, long thick hand-rolled pasta, on a floured wooden board; a heap of finished pici dusted with semolina beside her hands.
+Important Details: her face kind and absorbed, hands in focus; flour in the air catching the light; the window light soft and slanting from the left.`,
+      ],
+      [
+        "cantina",
+        "1024x1536",
+        `Scene: the wine cellar under the trattoria: a narrow brick barrel vault, old oak casks on wooden cradles along both walls, racks of dusty bottles, a single candle in a niche and a lantern on a cask.
+Subject: a straw-wrapped flask and a glass of red wine on the head of the nearest cask, the vault receding into darkness.
+Important Details: deep warm shadows of sepia and burnt sienna, the candle the only light, cool damp ultramarine in the far end of the vault.`,
+      ],
+      [
+        "terrazza",
+        "1536x1024",
+        `Scene: the trattoria's terrace on a summer night: the vine pergola strung with small paper lanterns, the cathedral cupola dark against a deep blue sky with the first stars, the lights of the city below.
+Subject: the terrace full and alive: guests at five or six tables seen from a little distance, laughing and leaning toward each other over wine and plates, a waiter carrying two plates between the tables; figures small and loosely drawn, no faces in close-up.
+Important Details: warm lantern light against the cool night, a convivial murmur you can almost hear.`,
+      ],
+      [
+        "gatto",
+        "1024x1536",
+        `Subject: the house's ginger cat asleep on a deep stone windowsill of the trattoria, between terracotta pots of basil and a lemon tree, the green wooden shutters open.
+Important Details: below and beyond the window, a quiet narrow Oltrarno street with a Vespa parked by a doorway and laundry hanging between the houses, afternoon sun; the cat curled and content, painted with care.`,
+      ],
+      [
+        "pane",
+        "1024x1024",
+        `Subject: a pair of hands pouring new green olive oil from a small tin can over thick slices of grilled Tuscan bread rubbed with garlic, on a rough wooden board; a bowl of ripe tomatoes, a head of garlic, a few basil leaves, coarse salt.
+Important Details: close still life seen from above at an angle, the stream of oil catching the light, the bread charred at the edges.`,
+      ],
+      [
+        "dolci",
+        "1024x1024",
+        `Subject: the end of the meal: a slice of torta della nonna, a custard tart with pine nuts and powdered sugar, on a ceramic plate; a small glass of amber vin santo with three cantucci almond biscuits beside it, a tiny cup of espresso.
+Important Details: close still life on a white linen cloth with a faint fold, warm late light, a few crumbs.`,
+      ],
+    ] as const
+  ).map(
+    ([name, size, scene]): ImagePrompt => ({
+      id: `galleria/${name}`,
+      size,
+      quality: "high",
+      transparent: false,
+      prompt: `${scene}
+Use Case: a picture in the gallery of a restaurant website, showing guests the place and its food.
+Constraints: the painting fills the whole picture edge to edge, ${NO_TEXT}, no modern branding.
+${STYLE}`,
+    }),
+  ),
 ];

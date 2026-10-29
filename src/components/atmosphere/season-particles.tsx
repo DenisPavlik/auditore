@@ -70,7 +70,7 @@ function spawn(season: Season, layer: Layer, width: number, height: number, anyw
   const b = BEHAVIOUR[season];
   // The back layer drifts slowly behind the page, so it barely follows the scroll.
   const depth = layer === "back" ? 0.2 : 0.25 + Math.random() * 0.6;
-  const size = layer === "back" ? b.size * (2.6 + Math.random()) : b.size * (0.45 + depth * 0.75);
+  const size = layer === "back" ? b.size * (1.3 + Math.random() * 0.6) : b.size * (0.45 + depth * 0.75);
   return {
     season,
     x: Math.random() * width,
@@ -84,7 +84,7 @@ function spawn(season: Season, layer: Layer, width: number, height: number, anyw
     spinRate: (Math.random() - 0.5) * 2 * b.spin,
     tumblePhase: Math.random() * Math.PI * 2,
     tumbleRate: b.tumble * (0.5 + Math.random()),
-    opacity: layer === "back" ? 0.7 : 0.55 + depth * 0.4,
+    opacity: layer === "back" ? 0.55 : 0.55 + depth * 0.4,
     fade: 0,
     leaving: false,
   };
