@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SeasonSwitcher } from "@/components/season/season-switcher";
 
 const PAGES = [
+  { href: "/la-casa", label: "La Casa" },
   { href: "/menu", label: "La Carta" },
   { href: "/galleria", label: "La Galleria" },
 ];

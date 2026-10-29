@@ -219,4 +219,15 @@ Constraints: the painting fills the whole picture edge to edge, ${NO_TEXT}, no m
 ${STYLE}`,
     }),
   ),
+  {
+    id: "casa/mappa",
+    size: "1536x1024",
+    quality: "high",
+    transparent: false,
+    prompt: `Subject: a hand-drawn bird's-eye map of the centre of Florence, as a Renaissance cartographer would sketch it for a guest. The Arno crosses the whole picture from left to right a little below the middle, with the Ponte Vecchio and two other bridges. North of the river: the cathedral with its red-brick cupola and the bell tower, Palazzo Vecchio with its tower, the tight grid of terracotta roofs. South of the river, the Oltrarno: Palazzo Pitti and the green terraces of the Boboli gardens, a web of narrow lanes, and in one small lane just south of the Ponte Vecchio a single house painted a little warmer than the rest, with a vine pergola on its roof terrace.
+Important Details: seen from high above at a gentle angle, the buildings drawn in small elevation so each landmark reads; fine ink streets, watercolour washes for roofs, river and gardens; a small compass rose in a lower corner; the map dissolves into bare paper at the edges with ragged wash boundaries.
+Use Case: the "how to find us" map on a restaurant website; the house will be marked over the picture in HTML.
+Constraints: ${NO_TEXT}, no street names, no labels, no legend.
+${STYLE}`,
+  },
 ];

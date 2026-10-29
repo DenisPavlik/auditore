@@ -74,6 +74,12 @@ export default async function Home() {
               chestnuts and porcini when the vine turns, ribollita when the frost comes, broad beans under the wisteria,
               and in high summer whatever is ripest by noon.
             </p>
+            <Link
+              href="/la-casa"
+              className="ink-link inline-block font-display text-sm tracking-[0.22em] text-accent-ink uppercase"
+            >
+              The whole story →
+            </Link>
           </div>
         </section>
 
