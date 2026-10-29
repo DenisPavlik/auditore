@@ -230,4 +230,29 @@ Use Case: the "how to find us" map on a restaurant website; the house will be ma
 Constraints: ${NO_TEXT}, no street names, no labels, no legend.
 ${STYLE}`,
   },
+  // On a phone he waits half hidden behind the edge of the screen.
+  {
+    id: "volpe/sbircia",
+    size: "1024x1536",
+    quality: "high",
+    transparent: true,
+    reference: "art/approved/la-volpe.png",
+    prompt: `Draw this same character peeking out from behind the right edge of the picture, as if from behind a door frame.
+Change: only the left part of La Volpe shows; the right edge of the picture cuts straight down through him, and everything beyond it is hidden. We see his head leaning out into the picture, both ears up, the head tilted a little in friendly curiosity, a warm questioning smile as if asking "can I help you?"; one paw curled around the edge of the picture holding on to it, the fingers wrapped over the edge; his shoulder and a slice of the white shirt and burnt-sienna waistcoat below the head. His body continues down out of the bottom of the picture.
+Preserve: the exact same fox, same face, fur colours and markings; the same white linen shirt and burnt-sienna waistcoat; the same drawing style, line weight and watercolour palette; drawn at the same size as the original, so his head is the same size.
+Constraints: isolated character on a fully transparent background, the cut at the right edge clean and vertical, no door, no wall, no frame drawn, ${NO_TEXT}, no hood, no weapons, no logos.
+${STYLE}`,
+  },
+  {
+    id: "volpe/sbircia-zampa",
+    size: "1024x1536",
+    quality: "high",
+    transparent: true,
+    reference: "art/approved/volpe-sbircia.png",
+    prompt: `Edit this illustration.
+Change: only his paw. Now it reaches past the cut on the right; instead, it stays entirely inside the picture, to the left of the vertical cut line: his paw curls round the edge from behind, so we see four furry fingers lying over the edge, seen from the front, fingertips pointing left, overlapping the waistcoat at chest height. Nothing of him sticks out to the right of the cut.
+Preserve: everything else exactly: his head, face, expression, ears, the shirt and waistcoat, the vertical cut line in the same place, the size and position in the picture, the drawing style and palette.
+Constraints: fully transparent background, ${NO_TEXT}.
+${STYLE}`,
+  },
 ];

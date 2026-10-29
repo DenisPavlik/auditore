@@ -15,9 +15,10 @@ function sourceFor(clip: Clip) {
  * action is a way in, a loop that lasts as long as it needs to, and a way back.
  * Each clip starts on the frame the previous one ends on, so two stacked videos
  * hand over with a hard cut and nothing to see. The hidden one always holds the
- * clip that comes next, loaded and waiting on its first frame.
+ * clip that comes next, loaded and waiting on its first frame. Every stage on
+ * the page plays the same moves, so he is the same fox wherever he stands.
  */
-export function VolpeStage() {
+export function VolpeStage({ className = "" }: { className?: string }) {
   const stage = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -107,7 +108,7 @@ export function VolpeStage() {
     <div
       ref={stage}
       aria-hidden
-      className="pointer-events-none fixed right-0 bottom-0 z-20 aspect-[430/720] h-36 select-none sm:right-6 sm:h-56 lg:h-[clamp(16rem,40vh,30rem)]"
+      className={`pointer-events-none aspect-[430/720] select-none ${className}`}
     >
       {[0, 1].map((i) => (
         <video

@@ -8,12 +8,12 @@ export type Action = (typeof ACTIONS)[number];
 /** A neutral stance, or one action's way in, its loop, and its way out. */
 export type Clip = "sta" | `${Action}-in` | Action | `${Action}-out`;
 
-type State = { want: Action | null; playing: Clip };
+type State = { want: Action | null; playing: Clip; open: boolean };
 
 // Kept on globalThis so a hot reload of this module in development doesn't
 // leave the stage and its controls talking to two different copies.
 const shared = ((globalThis as { __volpe?: { state: State; listeners: Set<() => void> } }).__volpe ??= {
-  state: { want: null, playing: "sta" },
+  state: { want: null, playing: "sta", open: false },
   listeners: new Set(),
 });
 
@@ -25,12 +25,16 @@ function emit(next: Partial<State>) {
 export const volpe = {
   subscribe(listener: () => void) {
     shared.listeners.add(listener);
-    return () => shared.listeners.delete(listener);
+    return () => {
+      shared.listeners.delete(listener);
+    };
   },
   get: () => shared.state,
   /** Ask him to start an action, or pass null to let him return to standing. */
   want: (action: Action | null) => emit({ want: action }),
   playing: (clip: Clip) => emit({ playing: clip }),
+  /** Open or close his desk, the sheet where a guest talks to him. */
+  setOpen: (open: boolean) => emit({ open }),
 };
 
 /** The clip that should follow `current` while he is asked to do `want`. */

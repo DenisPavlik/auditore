@@ -15,6 +15,13 @@ the fox has no green in him, while his cream apron is too close to paper to key.
 (taken from the neutral "sta", the approved la-volpe.png) instead of fitting
 each pose to the frame, so clips that move from one pose to another start and
 end on stills that line up exactly. Writes volpe-<pose>-stage.png.
+
+    python3 -I scripts/compose-volpe.py --peek sbircia
+
+--peek is for a pose cut off by the right edge of its picture (he peeks out
+from behind the edge of a phone screen): it stands him flush against the right
+side of a tall 9:16 green stage, his paw curled over the cut touching the edge,
+writing volpe-<pose>-peek.png.
 """
 import sys
 
@@ -26,6 +33,7 @@ FOX_HEIGHT = 0.86  # share of the square the fox stands in
 
 GREEN = (0, 177, 64)
 stage_mode = "--stage" in sys.argv
+peek_mode = "--peek" in sys.argv
 green = "--green" in sys.argv or stage_mode
 poses = [arg for arg in sys.argv[1:] if not arg.startswith("--")]
 
@@ -45,6 +53,25 @@ stage_scale = SIZE * FOX_HEIGHT / (neutral[3] - neutral[1])
 
 for pose in poses:
     fox = source(pose)
+    if peek_mode:
+        alpha = fox.getchannel("A")
+        left, top, right, bottom = solid(fox)
+        # The cut: the last column where most of his height is still solid. Only the paw,
+        # curled over the edge, reaches past it; the page shows a strip of paper there.
+        columns = [alpha.crop((x, top, x + 1, bottom)).point(lambda v: 255 if v > 200 else 0).histogram()[255]
+                   for x in range(left, right)]
+        cut = left + max(x for x, n in enumerate(columns) if n > 0.6 * (bottom - top))
+        fox = fox.crop((left, top, right, bottom))
+        fox.putalpha(fox.getchannel("A").point(lambda v: v if v > 60 else 0))
+        w, h = 720, 1280
+        scale = h * 0.92 / fox.height
+        fox = fox.resize((round(fox.width * scale), round(h * 0.92)), Image.Resampling.LANCZOS)
+        stage = Image.new("RGBA", (w, h), GREEN + (255,))
+        stage.alpha_composite(fox, (w - fox.width, round(h * 0.04)))
+        out = f"art/approved/volpe-{pose}-peek.png"
+        stage.convert("RGB").save(out)
+        print(f"✓ {out} (the cut is {round((right - cut) * scale)} px in from the right edge)")
+        continue
     if stage_mode:
         fox = fox.resize((round(fox.width * stage_scale), round(fox.height * stage_scale)), Image.Resampling.LANCZOS)
         offset = ((SIZE - fox.width) // 2, round(SIZE * 0.95 - neutral[3] * stage_scale))

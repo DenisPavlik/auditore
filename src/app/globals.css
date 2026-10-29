@@ -356,3 +356,80 @@ html:has(dialog.lightbox[open]) {
     mask-image: none;
   }
 }
+
+/* La Volpe on a phone, behind the right edge of the screen. "out" is fully
+   hidden, "ducked" leaves an ear and an eye while the page scrolls, "in" is
+   leaning out with his paw on the edge. */
+.volpe-peek {
+  translate: 0 0;
+  transition: translate 650ms cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+
+.volpe-peek[data-state="ducked"] {
+  translate: 62% 0;
+  transition-duration: 300ms;
+  transition-timing-function: ease-in;
+}
+
+.volpe-peek[data-state="out"] {
+  translate: 105% 0;
+  transition-timing-function: ease-in;
+}
+
+/* His shirt runs on below the picture: let it fade out rather than end. */
+.volpe-peek-fox {
+  mask-image: linear-gradient(to bottom, #000 72%, transparent);
+}
+
+/* The edge of the page he hides behind: a strip of the site's paper from the
+   cut down his side to the screen's edge, under the paw curled over it
+   (27 of the clip's 400 px). */
+.volpe-peek-edge {
+  width: 6.9%;
+  background: var(--intonaco);
+  box-shadow: -1px 0 0 color-mix(in oklab, var(--ink) 18%, transparent), -6px 0 12px -8px rgb(42 32 25 / 0.5);
+  mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 70%, transparent);
+}
+
+.volpe-peek-ask {
+  opacity: 0;
+  translate: 6px 4px;
+  scale: 0.92;
+  transform-origin: 100% 100%;
+  transition: opacity 250ms, translate 250ms, scale 250ms;
+}
+
+.volpe-peek-ask[data-asking="true"] {
+  opacity: 1;
+  translate: 0 0;
+  scale: 1;
+  transition-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+
+/* His desk comes in from the right, the side he peeks from. */
+html:has(dialog.volpe-desk[open]) {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .volpe-desk[open] {
+    animation: desk-in 450ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .volpe-desk[open]::backdrop {
+    animation: lightbox-in 300ms ease-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .volpe-peek,
+  .volpe-peek-ask {
+    transition: none;
+  }
+}
+
+@keyframes desk-in {
+  from {
+    translate: 100% 0;
+  }
+}

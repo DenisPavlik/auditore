@@ -122,3 +122,12 @@ CLIPS.push(
     input: { duration: String(move.seconds), resolution: "720p", aspect_ratio: "1:1", generate_audio: false },
   })),
 );
+
+// On a phone he waits half hidden behind the right edge of the screen, peeking out.
+CLIPS.push({
+  id: "volpe-peek/sbircia",
+  endpoint: "bytedance/seedance-2.0/image-to-video",
+  image: "art/approved/volpe-sbircia-peek.png",
+  prompt: `${VOLPE_GREEN_STAGE} he is peeking out from behind the right edge of the picture, curious and friendly, as if about to ask "can I help you?". Over the clip: he tilts his head a little to one side and back, his ears perk up and one of them flicks, he blinks once, his whiskers twitch, and his fingers tap once on the edge he is holding. The vertical cut along the right side of him and the paw curled over it stay exactly where they are; he never leans further out or slides back. Every movement eases out and returns softly to where it started. The clip ends exactly as it begins.`,
+  input: { duration: "5", resolution: "720p", aspect_ratio: "9:16", generate_audio: false },
+});
