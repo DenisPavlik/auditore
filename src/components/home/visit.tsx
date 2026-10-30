@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { getHours, HOUSE } from "@/lib/house";
 
 import { SectionHeading } from "./section-heading";
@@ -59,14 +61,14 @@ export async function Visit() {
               {HOUSE.email}
             </a>
           </p>
-          <a
-            href={`tel:${HOUSE.phone.replaceAll(" ", "")}`}
+          <Link
+            href="/prenota"
             className="mt-10 inline-flex items-center gap-3 rounded-full bg-accent px-7 py-3.5 font-display text-sm tracking-[0.22em] text-intonaco uppercase shadow-[0_10px_24px_-14px_var(--accent)] transition hover:bg-accent-ink"
           >
             Prenota un tavolo
-          </a>
+          </Link>
           <p className="mt-3 text-base text-pietra italic">
-            Booking online opens soon; until then, we take tables by phone.
+            Choose your own table on the plan, or call and we&rsquo;ll choose it for you.
           </p>
         </div>
       </div>

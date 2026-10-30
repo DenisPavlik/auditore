@@ -4,7 +4,7 @@ import type { BetaMessageParam } from "@anthropic-ai/sdk/resources/beta";
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
-import type { BookReply } from "@/app/api/volpe/book/route";
+import type { BookReply } from "@/app/api/booking/route";
 import type { ChatLine } from "@/app/api/volpe/chat/route";
 import type { Offer } from "@/lib/booking";
 
@@ -27,7 +27,7 @@ const OPENERS = [
 const MESSAGE_LIMIT = 500;
 
 // The only places his links may lead.
-const LINK = /\[([^\]]+)\]\((\/menu|\/la-casa#map-title|\/la-casa|\/galleria|tel:\+?\d+)\)/g;
+const LINK = /\[([^\]]+)\]\((\/menu|\/la-casa#map-title|\/la-casa|\/galleria|\/prenota(?:\?[\w=&:-]*)?|tel:\+?\d+)\)/g;
 
 /** His words, with the links he is allowed to give turned into real ones. */
 function Words({ text, close }: { text: string; close: () => void }) {
@@ -446,7 +446,7 @@ function BookingCard({ offer, onBooked }: { offer: Offer; onBooked: (name: strin
     setState("sending");
     setProblem(null);
     try {
-      const response = await fetch("/api/volpe/book", {
+      const response = await fetch("/api/booking", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -498,7 +498,7 @@ function BookingCard({ offer, onBooked }: { offer: Offer; onBooked: (name: strin
       ) : (
         <form onSubmit={confirm} className="mt-4 flex flex-col gap-2">
           <input name="name" required minLength={2} maxLength={80} autoComplete="name" placeholder="Your name" aria-label="Your name" className={field} disabled={state === "sending"} />
-          <input name="phone" required type="tel" autoComplete="tel" placeholder="Phone" aria-label="Phone" pattern="\+?[\d\s().\-]{6,24}" className={field} disabled={state === "sending"} />
+          <input name="phone" required type="tel" autoComplete="tel" placeholder="Phone" aria-label="Phone" pattern="\+?[\d\s\(\)\.\-]{6,24}" className={field} disabled={state === "sending"} />
           <input name="email" required type="email" autoComplete="email" placeholder="Email" aria-label="Email" className={field} disabled={state === "sending"} />
           {problem && <p className="text-base text-accent-ink">{problem}</p>}
           <button

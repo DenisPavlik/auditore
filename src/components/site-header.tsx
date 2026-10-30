@@ -20,14 +20,19 @@ export function SiteHeader() {
       <div className="contents sm:flex sm:items-center sm:gap-8">
         <nav aria-label="The house" className="order-last w-full sm:order-none sm:w-auto">
           {/* Over the painting it sits on a slip of paper, like the switcher, so it reads in any season. */}
-          <ul className="flex gap-5 sm:rounded-full sm:bg-intonaco/75 sm:px-5 sm:py-3 sm:ring-1 sm:shadow-[0_1px_0_rgb(42_32_25/0.06)] sm:ring-ink/8 sm:backdrop-blur-sm">
+          <ul className="flex justify-between gap-3 whitespace-nowrap sm:justify-start sm:gap-5 sm:rounded-full sm:bg-intonaco/75 sm:px-5 sm:py-3 sm:ring-1 sm:shadow-[0_1px_0_rgb(42_32_25/0.06)] sm:ring-ink/8 sm:backdrop-blur-sm">
             {PAGES.map((page) => (
               <li key={page.href}>
-                <Link href={page.href} className="ink-link font-display text-xs tracking-[0.24em] uppercase">
+                <Link href={page.href} className="ink-link font-display text-xs tracking-[0.14em] uppercase sm:tracking-[0.24em]">
                   {page.label}
                 </Link>
               </li>
             ))}
+            <li>
+              <Link href="/prenota" className="ink-link font-display text-xs tracking-[0.14em] text-accent-ink uppercase sm:tracking-[0.24em]">
+                Prenota
+              </Link>
+            </li>
           </ul>
         </nav>
         <SeasonSwitcher />

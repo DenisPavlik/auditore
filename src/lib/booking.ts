@@ -1,6 +1,7 @@
 import "server-only";
 
-import { and, eq, gt, inArray, lt, notInArray } from "drizzle-orm";
+import { and, asc, eq, gt, gte, inArray, isNull, lt, lte, ne, notInArray } from "drizzle-orm";
+import { cacheLife, cacheTag } from "next/cache";
 
 import { db } from "@/db";
 import { bookings, closures, diningTables, serviceHours, settings, zones } from "@/db/schema";
@@ -18,13 +19,18 @@ export type FreeTable = { label: string; zone: ZoneSlug; zoneName: string; seats
 export type Slot = { service: "pranzo" | "cena"; time: string; tables: FreeTable[] };
 
 export type DayAvailability =
-  | { open: true; date: string; weekday: string; terraceLaid: boolean; slots: Slot[] }
+  | { open: true; date: string; weekday: string; terraceLaid: boolean; closedZones: ZoneSlug[]; slots: Slot[] }
   | { open: false; date: string; weekday: string; reason: string };
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 /** The restaurant's wall clock right now, as YYYY-MM-DD and HH:MM. */
 export function florenceNow() {
+  return florenceWallClock(new Date());
+}
+
+/** An instant as the restaurant's wall clock shows it. */
+export function florenceWallClock(at: Date) {
   const parts = Object.fromEntries(
     new Intl.DateTimeFormat("en-GB", {
       timeZone: RESTAURANT_TIME_ZONE,
@@ -35,7 +41,7 @@ export function florenceNow() {
       minute: "2-digit",
       hourCycle: "h23",
     })
-      .formatToParts(new Date())
+      .formatToParts(at)
       .map((part) => [part.type, part.value]),
   );
   return { date: `${parts.year}-${parts.month}-${parts.day}`, time: `${parts.hour}:${parts.minute}` };
@@ -94,7 +100,13 @@ function seatsOf(table: { minGuests: number; maxGuests: number }) {
  * it: the service hours of that weekday, closures, the terrace's season, and
  * the bookings already laid. Not cached: a table can go at any moment.
  */
-export async function getAvailability(date: string, partySize: number, zone?: ZoneSlug): Promise<DayAvailability> {
+export async function getAvailability(
+  date: string,
+  partySize: number,
+  zone?: ZoneSlug,
+  /** A booking being moved, whose own table doesn't count as taken. */
+  ignore?: string,
+): Promise<DayAvailability> {
   const weekday = weekdayOf(date);
   const now = florenceNow();
   const last = addDays(now.date, BOOKING_WINDOW_DAYS);
@@ -159,6 +171,7 @@ export async function getAvailability(date: string, partySize: number, zone?: Zo
                 tables.map((t) => t.id),
               ),
               notInArray(bookings.status, ["cancelled", "no_show"]),
+              ignore ? ne(bookings.id, ignore) : undefined,
               lt(bookings.startsAt, dayEnd),
               gt(bookings.endsAt, dayStart),
             ),
@@ -184,7 +197,74 @@ export async function getAvailability(date: string, partySize: number, zone?: Zo
     }
   }
 
-  return { open: true, date, weekday, terraceLaid, slots };
+  const closedZoneSlugs = [...new Set(allTables.filter((t) => closedZones.has(t.zoneId)).map((t) => t.zone as ZoneSlug))];
+  return { open: true, date, weekday, terraceLaid, closedZones: closedZoneSlugs, slots };
+}
+
+export type CalendarDay = { date: string; weekday: string; open: boolean; reason?: string };
+
+/** The days the book is open for, from today: which ones the house serves, and why not when it doesn't. */
+export async function getCalendar(): Promise<CalendarDay[]> {
+  const today = florenceNow().date;
+  const last = addDays(today, BOOKING_WINDOW_DAYS);
+  const [hours, dayClosures] = await Promise.all([
+    db.selectDistinct({ weekday: serviceHours.weekday }).from(serviceHours),
+    db
+      .select({ date: closures.date, reason: closures.reason })
+      .from(closures)
+      .where(and(isNull(closures.zoneId), gte(closures.date, today), lte(closures.date, last))),
+  ]);
+  const serving = new Set(hours.map((row) => row.weekday));
+  return Array.from({ length: BOOKING_WINDOW_DAYS + 1 }, (_, i) => {
+    const date = addDays(today, i);
+    const weekday = weekdayOf(date);
+    const closure = dayClosures.find((c) => c.date === date);
+    if (closure) return { date, weekday, open: false, reason: closure.reason ?? "Closed" };
+    if (!serving.has(new Date(`${date}T12:00:00Z`).getUTCDay())) return { date, weekday, open: false, reason: "Chiuso" };
+    return { date, weekday, open: true };
+  });
+}
+
+/** A table as drawn on the floor plan, in plan units. */
+export type PlanTable = {
+  label: string;
+  zone: ZoneSlug;
+  shape: "round" | "square" | "rect" | "booth";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  minGuests: number;
+  maxGuests: number;
+  tags: string[];
+};
+
+/** Every table in the house where it stands. Invalidate with updateTag("tables"). */
+export async function getFloorPlan(): Promise<PlanTable[]> {
+  "use cache";
+  cacheTag("tables");
+  cacheLife("days");
+
+  const rows = await db
+    .select({
+      label: diningTables.label,
+      zone: zones.slug,
+      shape: diningTables.shape,
+      x: diningTables.x,
+      y: diningTables.y,
+      width: diningTables.width,
+      height: diningTables.height,
+      rotation: diningTables.rotation,
+      minGuests: diningTables.minGuests,
+      maxGuests: diningTables.maxGuests,
+      tags: diningTables.tags,
+    })
+    .from(diningTables)
+    .innerJoin(zones, eq(diningTables.zoneId, zones.id))
+    .where(eq(diningTables.isActive, true))
+    .orderBy(asc(zones.sortOrder), asc(diningTables.label));
+  return rows.map((row) => ({ ...row, zone: row.zone as ZoneSlug }));
 }
 
 /** A table held out for a guest, to be confirmed with their name and number. */
@@ -199,15 +279,18 @@ export type Offer = {
 };
 
 /** Whether this very table is free for this party at this time, as an offer. */
-export async function findOffer(input: {
-  date: string;
-  time: string;
-  partySize: number;
-  tableLabel: string;
-  occasion?: string;
-  notes?: string;
-}): Promise<{ ok: true; offer: Offer } | { ok: false; reason: string; nearest: { time: string; tables: string[] }[] }> {
-  const day = await getAvailability(input.date, input.partySize);
+export async function findOffer(
+  input: {
+    date: string;
+    time: string;
+    partySize: number;
+    tableLabel: string;
+    occasion?: string;
+    notes?: string;
+  },
+  ignore?: string,
+): Promise<{ ok: true; offer: Offer } | { ok: false; reason: string; nearest: { time: string; tables: string[] }[] }> {
+  const day = await getAvailability(input.date, input.partySize, undefined, ignore);
   if (!day.open) return { ok: false, reason: day.reason, nearest: [] };
   const slot = day.slots.find((s) => s.time === input.time);
   const table = slot?.tables.find((t) => t.label === input.tableLabel.toUpperCase());
@@ -240,17 +323,37 @@ export async function findOffer(input: {
 
 export type Guest = { name: string; email: string; phone: string };
 
-export type Booked = { id: string; date: string; weekday: string; time: string; partySize: number; table: FreeTable; name: string };
+export type Booked = {
+  id: string;
+  token: string;
+  date: string;
+  weekday: string;
+  time: string;
+  partySize: number;
+  table: FreeTable;
+  name: string;
+  email: string;
+  occasion?: string;
+  notes?: string;
+};
+
+type Request = { date: string; time: string; partySize: number; tableLabel: string; occasion?: string; notes?: string };
 
 /**
  * Lays the table for the guest. Everything is checked again here, and the
  * database's overlap constraint has the last word if two guests press at once.
+ * With `replaces`, the guest is moving a booking they already hold: its table
+ * is theirs to keep, and it is cancelled once the new one stands.
  */
 export async function createBooking(
-  request: { date: string; time: string; partySize: number; tableLabel: string; occasion?: string; notes?: string },
+  request: Request,
   guest: Guest,
+  replaces?: string,
 ): Promise<{ ok: true; booking: Booked } | { ok: false; reason: string }> {
-  const found = await findOffer(request);
+  const old = replaces ? await getBooking(replaces) : null;
+  if (replaces && (!old || old.status !== "confirmed" || !old.upcoming)) return { ok: false, reason: "That booking can no longer be changed." };
+
+  const found = await findOffer(request, old?.id);
   if (!found.ok) return { ok: false, reason: found.reason };
   const { offer } = found;
 
@@ -262,6 +365,9 @@ export async function createBooking(
   const startsAt = florenceInstant(offer.date, offer.time);
   const endsAt = new Date(startsAt.getTime() + (table.seating ?? 120) * 60_000);
 
+  // No transactions over Neon's HTTP driver: the old booking steps aside first, so it can't collide
+  // with its own new time, and takes its place back if the new one doesn't stand.
+  if (old) await db.update(bookings).set({ status: "cancelled" }).where(eq(bookings.id, old.id));
   try {
     const [row] = await db
       .insert(bookings)
@@ -277,12 +383,87 @@ export async function createBooking(
         notes: offer.notes,
         source: "web",
       })
-      .returning({ id: bookings.id });
-    return { ok: true, booking: { id: row.id, ...offer, name: guest.name } };
+      .returning({ id: bookings.id, token: bookings.manageToken });
+    return { ok: true, booking: { ...offer, id: row.id, token: row.token, name: guest.name, email: guest.email } };
   } catch (error) {
+    if (old) await db.update(bookings).set({ status: "confirmed" }).where(eq(bookings.id, old.id));
     if (isOverlap(error)) return { ok: false, reason: "Someone took that table a moment ago." };
     throw error;
   }
+}
+
+export type HeldBooking = Booked & {
+  status: (typeof bookings.$inferSelect)["status"];
+  phone: string;
+  startsAt: Date;
+  endsAt: Date;
+  /** The evening is still ahead, so the guest may change or cancel it. */
+  upcoming: boolean;
+};
+
+/** A booking as its guest sees it, found by the token in their link. */
+export async function getBooking(token: string): Promise<HeldBooking | null> {
+  if (!/^[a-f0-9]{32,80}$/.test(token)) return null;
+  const [row] = await db
+    .select({
+      id: bookings.id,
+      token: bookings.manageToken,
+      startsAt: bookings.startsAt,
+      endsAt: bookings.endsAt,
+      partySize: bookings.partySize,
+      name: bookings.guestName,
+      email: bookings.email,
+      phone: bookings.phone,
+      occasion: bookings.occasion,
+      notes: bookings.notes,
+      status: bookings.status,
+      label: diningTables.label,
+      minGuests: diningTables.minGuests,
+      maxGuests: diningTables.maxGuests,
+      tags: diningTables.tags,
+      zone: zones.slug,
+      zoneName: zones.name,
+    })
+    .from(bookings)
+    .innerJoin(diningTables, eq(bookings.tableId, diningTables.id))
+    .innerJoin(zones, eq(diningTables.zoneId, zones.id))
+    .where(eq(bookings.manageToken, token));
+  if (!row) return null;
+  const wall = florenceWallClock(row.startsAt);
+  return {
+    id: row.id,
+    token: row.token,
+    status: row.status,
+    startsAt: row.startsAt,
+    endsAt: row.endsAt,
+    upcoming: row.startsAt.getTime() > Date.now(),
+    date: wall.date,
+    weekday: weekdayOf(wall.date),
+    time: wall.time,
+    partySize: row.partySize,
+    name: row.name,
+    email: row.email,
+    phone: row.phone,
+    occasion: row.occasion ?? undefined,
+    notes: row.notes ?? undefined,
+    table: {
+      label: row.label,
+      zone: row.zone as ZoneSlug,
+      zoneName: row.zoneName,
+      seats: seatsOf(row),
+      tags: row.tags,
+    },
+  };
+}
+
+/** The guest gives the table back. Only a booking still ahead of them can be cancelled. */
+export async function cancelBooking(token: string): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const booking = await getBooking(token);
+  if (!booking) return { ok: false, reason: "We can't find that booking." };
+  if (booking.status !== "confirmed") return { ok: false, reason: "That booking is already closed." };
+  if (!booking.upcoming) return { ok: false, reason: "That evening has already begun. Please call us." };
+  await db.update(bookings).set({ status: "cancelled" }).where(eq(bookings.id, booking.id));
+  return { ok: true };
 }
 
 /** Postgres exclusion_violation, however deep the driver wraps it. */

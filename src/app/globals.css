@@ -446,3 +446,41 @@ html:has(dialog.volpe-desk[open]) {
     translate: 100% 0;
   }
 }
+
+/* The booking floor plan: a free table answers the pointer with the ring it wears when chosen. */
+.plan-ring {
+  transition: opacity 200ms;
+}
+
+.plan-table[data-state="free"]:not([aria-pressed="true"]):hover .plan-ring,
+.plan-table:focus-visible .plan-ring {
+  opacity: 0.75;
+}
+
+/* The house's stamp comes down on a fresh booking: lifted and large, then pressed into the paper. */
+.booking-stamp {
+  rotate: -6deg;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .booking-stamp {
+    animation: stamp-down 700ms cubic-bezier(0.3, 1.4, 0.5, 1) 900ms both;
+  }
+}
+
+@keyframes stamp-down {
+  from {
+    opacity: 0;
+    scale: 2.2;
+    rotate: -18deg;
+    filter: blur(3px);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    scale: 1;
+    rotate: -6deg;
+  }
+}
