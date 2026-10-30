@@ -92,23 +92,43 @@ export function VolpeDesk() {
     log.current?.scrollTo({ top: log.current.scrollHeight, behavior: "smooth" });
   }, [lines, waiting]);
 
-  // Safari keeps the layout viewport when the keyboard comes up and slides the page under it,
-  // so the desk follows the visible part of the screen instead.
+  // The keyboard only slides over the desk, as it would over a sheet of paper: the desk keeps its
+  // size and place, and just the writing line rises above the keys. Safari pans the page to show
+  // the field instead of resizing it, so the desk is held to the top of what is visible.
   useEffect(() => {
     const el = dialog.current;
     const view = window.visualViewport;
     if (!open || !el || !view) return;
     const fit = () => {
+      const covered = el.offsetHeight - view.height;
+      // Safari's own bars move the edge a little too; only a keyboard covers this much.
+      const keys = covered > 120 ? covered : 0;
       el.style.setProperty("--desk-top", `${view.offsetTop}px`);
-      el.style.setProperty("--desk-height", `${view.height}px`);
-      log.current?.scrollTo({ top: log.current.scrollHeight });
+      el.style.setProperty("--desk-keys", `${keys}px`);
+      el.toggleAttribute("data-keys", keys > 0);
+      const field = document.activeElement;
+      const list = log.current;
+      if (!list || !keys) return;
+      if (field instanceof HTMLElement && list.contains(field)) {
+        // A field on the booking card: keep it in sight above the keys.
+        const below = field.getBoundingClientRect().bottom - list.getBoundingClientRect().bottom + 16;
+        if (below > 0) list.scrollTop += below;
+      } else {
+        list.scrollTop = list.scrollHeight;
+      }
+    };
+    // Only the conversation scrolls; dragging anywhere else would move the page beneath.
+    const hold = (event: TouchEvent) => {
+      if (!(event.target instanceof Node && log.current?.contains(event.target))) event.preventDefault();
     };
     fit();
     view.addEventListener("resize", fit);
     view.addEventListener("scroll", fit);
+    el.addEventListener("touchmove", hold, { passive: false });
     return () => {
       view.removeEventListener("resize", fit);
       view.removeEventListener("scroll", fit);
+      el.removeEventListener("touchmove", hold);
     };
   }, [open]);
 
@@ -209,15 +229,15 @@ export function VolpeDesk() {
       onClose={close}
       onClick={(event) => event.target === event.currentTarget && close()}
       aria-labelledby="volpe-desk-title"
-      className="volpe-desk fixed top-[var(--desk-top,0px)] right-0 bottom-auto left-auto m-0 h-[var(--desk-height,100svh)] max-h-none w-screen max-w-none overflow-hidden bg-wash p-0 text-ink backdrop:bg-ink/25 backdrop:backdrop-blur-[2px] sm:w-[min(44rem,100vw)] sm:shadow-[-24px_0_60px_-30px_rgb(42_32_25/0.5)]"
+      className="volpe-desk group fixed top-[var(--desk-top,0px)] right-0 bottom-auto left-auto m-0 h-[100svh] max-h-none w-screen max-w-none overflow-hidden bg-wash p-0 text-ink backdrop:bg-wash sm:w-[min(44rem,100vw)] sm:shadow-[-24px_0_60px_-30px_rgb(42_32_25/0.5)] sm:backdrop:bg-ink/25 sm:backdrop:backdrop-blur-[2px]"
     >
       {open && (
         // Turned to face the chat beside him. On a phone he stands half a step past the edge, so his
         // face stays clear of it.
-        <VolpeStage className="absolute -right-9 bottom-0 h-[min(56svh,30rem,58%)] -scale-x-100 sm:right-4 sm:h-[min(78svh,40rem)]" />
+        <VolpeStage className="absolute -right-9 bottom-0 h-[min(56svh,30rem)] -scale-x-100 sm:right-4 sm:h-[min(78svh,40rem)]" />
       )}
 
-      <div className="relative flex h-full flex-col">
+      <div className="relative flex h-full flex-col pb-[var(--desk-keys,0px)]">
         <header className="flex items-start justify-between gap-4 px-5 pt-6 sm:px-10 sm:pt-10">
           <div>
             <p className="font-display text-xs tracking-[0.28em] text-accent-ink uppercase">Il Capocameriere</p>
@@ -229,16 +249,18 @@ export function VolpeDesk() {
             type="button"
             onClick={close}
             aria-label="Close"
-            className="grid size-11 shrink-0 place-items-center rounded-full bg-intonaco/80 text-2xl ring-1 ring-ink/10 transition hover:text-accent-ink"
+            className="grid size-11 shrink-0 place-items-center rounded-full bg-intonaco/80 ring-1 ring-ink/10 transition hover:text-accent-ink"
           >
-            ×
+            <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden>
+              <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
           </button>
         </header>
 
         <div
           ref={log}
           aria-live="polite"
-          className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pt-8 pb-6 [mask-image:linear-gradient(to_bottom,transparent,#000_2rem)] sm:px-10"
+          className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 pt-8 pb-6 [mask-image:linear-gradient(to_bottom,transparent,#000_2rem)] sm:px-10"
         >
           <Bubble from="volpe">
             Buonasera! I&rsquo;m La Volpe, head waiter of the house. Ask me about tonight&rsquo;s menu, or tell me
@@ -285,7 +307,7 @@ export function VolpeDesk() {
 
         <form
           onSubmit={submit}
-          className="px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-10 sm:pb-10"
+          className="px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] group-data-keys:pb-3 sm:px-10 sm:pb-10"
         >
           <div className="flex max-w-[72%] items-end gap-2 rounded-3xl bg-intonaco/95 p-1.5 pl-4 shadow-[0_10px_30px_-18px_rgb(42_32_25/0.7)] ring-1 ring-ink/15 focus-within:ring-accent sm:max-w-[60%]">
             <label htmlFor="volpe-message" className="sr-only">
