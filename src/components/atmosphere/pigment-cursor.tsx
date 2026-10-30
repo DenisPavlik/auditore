@@ -53,9 +53,24 @@ export function PigmentCursor() {
       frame = requestAnimationFrame(tick);
     }
 
+    // A modal dialog (the desk, the gallery) opens in the top layer, above everything on the page.
+    // The cursor goes up there too, and climbs back on top each time another dialog opens.
+    const raise = () => {
+      for (const el of [ringEl, dotEl]) {
+        if (!el.showPopover) return;
+        if (el.matches(":popover-open")) el.hidePopover();
+        el.showPopover();
+      }
+    };
+    const dialogs = new MutationObserver((changes) => {
+      if (changes.some((change) => change.target instanceof HTMLDialogElement && change.target.open)) raise();
+    });
+
     const root = document.documentElement;
     root.dataset.cursor = "pigment";
     show(false);
+    raise();
+    dialogs.observe(document.body, { subtree: true, attributeFilter: ["open"] });
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerdown", onDown);
     window.addEventListener("pointerup", onUp);
@@ -63,6 +78,7 @@ export function PigmentCursor() {
     frame = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(frame);
+      dialogs.disconnect();
       delete root.dataset.cursor;
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerdown", onDown);
@@ -73,8 +89,8 @@ export function PigmentCursor() {
 
   return (
     <>
-      <div ref={ring} aria-hidden className="pigment-cursor pigment-ring" />
-      <div ref={dot} aria-hidden className="pigment-cursor pigment-dot" />
+      <div ref={ring} aria-hidden popover="manual" className="pigment-cursor pigment-ring" />
+      <div ref={dot} aria-hidden popover="manual" className="pigment-cursor pigment-dot" />
     </>
   );
 }

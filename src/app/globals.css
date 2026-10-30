@@ -156,9 +156,12 @@ body {
 
 .pigment-cursor {
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0 auto auto 0;
   z-index: 70;
+  /* A popover, so it can sit in the top layer over an open dialog; none of the popover's own look. */
+  overflow: visible;
+  border: 0;
+  padding: 0;
   pointer-events: none;
   opacity: 0;
   will-change: translate;
