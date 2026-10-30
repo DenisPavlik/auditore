@@ -233,8 +233,8 @@ export function VolpeDesk() {
     >
       {open && (
         // Turned to face the chat beside him. On a phone he stands half a step past the edge, so his
-        // face stays clear of it.
-        <VolpeStage className="absolute -right-9 bottom-0 h-[min(56svh,30rem)] -scale-x-100 sm:right-4 sm:h-[min(78svh,40rem)]" />
+        // face stays clear of it, and steps down out of sight while the keyboard is up.
+        <VolpeStage className="absolute -right-9 bottom-0 h-[min(56svh,30rem)] -scale-x-100 transition-[translate,opacity] duration-300 ease-out group-data-keys:translate-y-full group-data-keys:opacity-0 sm:right-4 sm:h-[min(78svh,40rem)]" />
       )}
 
       <div className="relative flex h-full flex-col pb-[var(--desk-keys,0px)]">
