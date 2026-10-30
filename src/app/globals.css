@@ -405,6 +405,22 @@ html:has(dialog.volpe-desk[open]) {
   overflow: hidden;
 }
 
+/* With the keyboard up, Safari shows whatever lies past the desk's edge beneath its own bars.
+   On a phone the desk is the whole screen, so the page under it goes blank while the guest types. */
+@media (width < 40rem) {
+  html:has(dialog.volpe-desk[data-typing]) {
+    background-color: var(--wash);
+  }
+
+  html:has(dialog.volpe-desk[data-typing]) body {
+    visibility: hidden;
+  }
+
+  html:has(dialog.volpe-desk[data-typing]) dialog.volpe-desk {
+    visibility: visible;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .volpe-desk[open] {
     animation: desk-in 450ms cubic-bezier(0.2, 0.8, 0.2, 1);

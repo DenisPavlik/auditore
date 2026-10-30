@@ -93,42 +93,112 @@ export function VolpeDesk() {
   }, [lines, waiting]);
 
   // The keyboard only slides over the desk, as it would over a sheet of paper: the desk keeps its
-  // size and place, and just the writing line rises above the keys. Safari pans the page to show
-  // the field instead of resizing it, so the desk is held to the top of what is visible.
+  // size and place, the writing line rises with the keys, and he draws back beside it. All of it
+  // moves on the keyboard's own beat, so nothing jumps while the keys come and go.
   useEffect(() => {
     const el = dialog.current;
     const view = window.visualViewport;
-    if (!open || !el || !view) return;
+    const column = el?.querySelector<HTMLElement>(".volpe-desk-column");
+    const stand = el?.querySelector<HTMLElement>(".volpe-desk-stand");
+    const fox = el?.querySelector<HTMLElement>(".volpe-stage-fox");
+    const form = el?.querySelector<HTMLElement>("form");
+    if (!open || !el || !view || !column || !stand || !fox || !form) return;
+
+    const BEAT = { duration: 260, easing: "cubic-bezier(0.25, 0.9, 0.3, 1)", fill: "forwards" } as const;
+    let keys = -1;
+    let follow = 0;
+
+    /** Moves a property from wherever it is now, even mid-move, to where it should be. */
+    function glide(target: HTMLElement, property: "paddingBottom" | "transform", to: string) {
+      const from = getComputedStyle(target)[property];
+      for (const animation of target.getAnimations()) animation.cancel();
+      target.style[property] = to;
+      if (from !== to) target.animate([{ [property]: from }, { [property]: to }], { ...BEAT, fill: "none" });
+    }
+
+    /** Keeps the conversation's last words, or the card field being filled, in sight while the line rises. */
+    function keepInSight(until: number) {
+      cancelAnimationFrame(follow);
+      const list = log.current;
+      const step = () => {
+        if (!list) return;
+        const field = document.activeElement;
+        if (field instanceof HTMLElement && list.contains(field)) {
+          const below = field.getBoundingClientRect().bottom - list.getBoundingClientRect().bottom + 16;
+          if (below > 0) list.scrollTop += below;
+        } else {
+          list.scrollTop = list.scrollHeight;
+        }
+        if (performance.now() < until) follow = requestAnimationFrame(step);
+      };
+      step();
+    }
+
+    function settle(next: number) {
+      if (!el || !column || !stand || !fox || !form || next === keys) return;
+      keys = next;
+      el.toggleAttribute("data-keys", keys > 0);
+      // The line sits just above the keys; the form's own bottom space is for the home bar, which they cover.
+      const lift = keys ? Math.max(0, keys - parseFloat(getComputedStyle(form).paddingBottom) + 12) : 0;
+      glide(column, "paddingBottom", `${lift}px`);
+      // He fits between the header and the keys, standing on the keyboard's edge.
+      const header = el.querySelector("header")!.getBoundingClientRect().bottom - el.getBoundingClientRect().top;
+      const size = keys ? Math.min(1, (el.offsetHeight - keys - header - 12) / fox.offsetHeight) : 1;
+      glide(stand, "transform", `translateY(${-keys}px) scale(${size.toFixed(3)})`);
+      keepInSight(performance.now() + BEAT.duration + 40);
+    }
+
     const fit = () => {
+      // Should Safari still slide the page, the desk stays on what is visible.
+      el.style.setProperty("--desk-top", `${view.offsetTop}px`);
       const covered = el.offsetHeight - view.height;
       // Safari's own bars move the edge a little too; only a keyboard covers this much.
-      const keys = covered > 120 ? covered : 0;
-      el.style.setProperty("--desk-top", `${view.offsetTop}px`);
-      el.style.setProperty("--desk-keys", `${keys}px`);
-      el.toggleAttribute("data-keys", keys > 0);
-      const field = document.activeElement;
-      const list = log.current;
-      if (!list || !keys) return;
-      if (field instanceof HTMLElement && list.contains(field)) {
-        // A field on the booking card: keep it in sight above the keys.
-        const below = field.getBoundingClientRect().bottom - list.getBoundingClientRect().bottom + 16;
-        if (below > 0) list.scrollTop += below;
-      } else {
-        list.scrollTop = list.scrollHeight;
-      }
+      if (el.hasAttribute("data-typing")) settle(covered > 120 ? Math.round(covered) : 0);
+    };
+
+    // Safari slides the whole page up to show a field it focuses, then the desk would have to chase it.
+    // Focusing the field ourselves, without that slide, leaves the page still.
+    const tap = (event: TouchEvent) => {
+      const field = event.target;
+      if (!(field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement)) return;
+      if (field === document.activeElement || field.disabled) return;
+      event.preventDefault();
+      field.focus({ preventScroll: true });
     };
     // Only the conversation scrolls; dragging anywhere else would move the page beneath.
     const hold = (event: TouchEvent) => {
       if (!(event.target instanceof Node && log.current?.contains(event.target))) event.preventDefault();
     };
+    // The page beneath is hidden from the moment typing starts, and the desk lets go as soon as it
+    // ends, together with the keys going down rather than after them.
+    const typing = () =>
+      requestAnimationFrame(() => {
+        const field = document.activeElement;
+        const writing = field instanceof HTMLElement && el.contains(field) && field.matches("input, textarea");
+        el.toggleAttribute("data-typing", writing);
+        if (!writing) settle(0);
+        else fit();
+      });
+
     fit();
     view.addEventListener("resize", fit);
     view.addEventListener("scroll", fit);
+    el.addEventListener("touchend", tap, { passive: false });
     el.addEventListener("touchmove", hold, { passive: false });
+    el.addEventListener("focusin", typing);
+    el.addEventListener("focusout", typing);
     return () => {
+      cancelAnimationFrame(follow);
       view.removeEventListener("resize", fit);
       view.removeEventListener("scroll", fit);
+      el.removeEventListener("touchend", tap);
       el.removeEventListener("touchmove", hold);
+      el.removeEventListener("focusin", typing);
+      el.removeEventListener("focusout", typing);
+      el.removeAttribute("data-typing");
+      el.removeAttribute("data-keys");
+      column.style.paddingBottom = "";
+      stand.style.transform = "";
     };
   }, [open]);
 
@@ -233,11 +303,13 @@ export function VolpeDesk() {
     >
       {open && (
         // Turned to face the chat beside him. On a phone he stands half a step past the edge, so his
-        // face stays clear of it, and steps down out of sight while the keyboard is up.
-        <VolpeStage className="absolute -right-9 bottom-0 h-[min(56svh,30rem)] -scale-x-100 transition-[translate,opacity] duration-300 ease-out group-data-keys:translate-y-full group-data-keys:opacity-0 sm:right-4 sm:h-[min(78svh,40rem)]" />
+        // face stays clear of it. While the keyboard is up he draws back, whole, beside the writing line.
+        <div className="volpe-desk-stand pointer-events-none absolute inset-0 origin-bottom-right will-change-transform">
+          <VolpeStage className="volpe-stage-fox absolute -right-9 bottom-0 h-[min(56svh,30rem)] -scale-x-100 sm:right-4 sm:h-[min(78svh,40rem)]" />
+        </div>
       )}
 
-      <div className="relative flex h-full flex-col pb-[var(--desk-keys,0px)]">
+      <div className="volpe-desk-column relative flex h-full flex-col">
         <header className="flex items-start justify-between gap-4 px-5 pt-6 sm:px-10 sm:pt-10">
           <div>
             <p className="font-display text-xs tracking-[0.28em] text-accent-ink uppercase">Il Capocameriere</p>
@@ -307,7 +379,7 @@ export function VolpeDesk() {
 
         <form
           onSubmit={submit}
-          className="px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] group-data-keys:pb-3 sm:px-10 sm:pb-10"
+          className="px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-10 sm:pb-10"
         >
           <div className="flex max-w-[72%] items-end gap-2 rounded-3xl bg-intonaco/95 p-1.5 pl-4 shadow-[0_10px_30px_-18px_rgb(42_32_25/0.7)] ring-1 ring-ink/15 focus-within:ring-accent sm:max-w-[60%]">
             <label htmlFor="volpe-message" className="sr-only">
