@@ -207,3 +207,17 @@ export const galleryImages = pgTable("gallery_images", {
     .notNull()
     .defaultNow(),
 });
+
+/**
+ * How many times a visitor has spoken to La Volpe today, for the rate limit.
+ * Keyed by a hash of the IP, never the address itself.
+ */
+export const volpeVisits = pgTable(
+  "volpe_visits",
+  {
+    visitor: text("visitor").notNull(),
+    day: date("day").notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [uniqueIndex("volpe_visits_visitor_day").on(t.visitor, t.day)],
+);

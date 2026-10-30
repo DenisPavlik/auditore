@@ -74,8 +74,6 @@ export function VolpePeek() {
       data-state={out ? "out" : ducked ? "ducked" : "in"}
       className="volpe-peek fixed right-0 bottom-24 z-30 h-52 select-none"
     >
-      {/* The edge of the page he hides behind, his paw curled over it. */}
-      <span aria-hidden className="volpe-peek-edge absolute inset-y-0 right-0" />
       <video
         ref={video}
         muted

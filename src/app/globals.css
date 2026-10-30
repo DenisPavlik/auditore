@@ -376,19 +376,13 @@ html:has(dialog.lightbox[open]) {
   transition-timing-function: ease-in;
 }
 
-/* His shirt runs on below the picture: let it fade out rather than end. */
+/* His shirt runs on below the picture: let it fade out rather than end. The
+   clip goes on 27 of its 400 px past the line his body is cut along (his
+   fingers on the wall he hides behind), so that much sits off the screen and
+   the cut runs along the screen's own edge. */
 .volpe-peek-fox {
+  translate: 6.9% 0;
   mask-image: linear-gradient(to bottom, #000 72%, transparent);
-}
-
-/* The edge of the page he hides behind: a strip of the site's paper from the
-   cut down his side to the screen's edge, under the paw curled over it
-   (27 of the clip's 400 px). */
-.volpe-peek-edge {
-  width: 6.9%;
-  background: var(--intonaco);
-  box-shadow: -1px 0 0 color-mix(in oklab, var(--ink) 18%, transparent), -6px 0 12px -8px rgb(42 32 25 / 0.5);
-  mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 70%, transparent);
 }
 
 .volpe-peek-ask {

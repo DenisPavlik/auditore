@@ -1,105 +1,81 @@
 "use client";
 
+import type { BetaMessageParam } from "@anthropic-ai/sdk/resources/beta";
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
-import type { Desk } from "@/app/api/volpe/desk/route";
-import { SEASON_META, type Season } from "@/lib/seasons";
+import type { BookReply } from "@/app/api/volpe/book/route";
+import type { ChatLine } from "@/app/api/volpe/chat/route";
+import type { Offer } from "@/lib/booking";
 
 import { VolpeStage } from "./volpe-stage";
 import { volpe } from "./volpe-store";
 
-type Topic = "menu" | "book" | "hours" | "terrace" | "where";
-type Line = { from: "volpe" | "guest"; text: ReactNode };
+type Line =
+  | { id: number; from: "guest" | "volpe"; text: string }
+  | { id: number; from: "card"; offer: Offer };
 
-const ASK: Record<Topic, string> = {
-  menu: "What’s good tonight?",
-  book: "I’d like to book a table.",
-  hours: "When are you open?",
-  terrace: "Is the terrace open?",
-  where: "Where do I find you?",
-};
+/** Ways into the conversation for a guest who doesn't know what to ask. */
+const OPENERS = [
+  "What’s good tonight?",
+  "I’d like to book a table.",
+  "When are you open?",
+  "Is the terrace open?",
+  "Where do I find you?",
+];
 
-const SERVICE_NAMES = { pranzo: "Pranzo", cena: "Cena" };
+const MESSAGE_LIMIT = 500;
 
-function telHref(phone: string) {
-  return `tel:${phone.replaceAll(" ", "")}`;
+// The only places his links may lead.
+const LINK = /\[([^\]]+)\]\((\/menu|\/la-casa#map-title|\/la-casa|\/galleria|tel:\+?\d+)\)/g;
+
+/** His words, with the links he is allowed to give turned into real ones. */
+function Words({ text, close }: { text: string; close: () => void }) {
+  const parts: ReactNode[] = [];
+  let last = 0;
+  for (const match of text.matchAll(LINK)) {
+    parts.push(text.slice(last, match.index));
+    const [, label, href] = match;
+    const className = "text-accent-ink ink-link";
+    parts.push(
+      href.startsWith("tel:") ? (
+        <a key={match.index} href={href} className={className}>
+          {label}
+        </a>
+      ) : (
+        <Link key={match.index} href={href} onClick={close} className={className}>
+          {label}
+        </Link>
+      ),
+    );
+    last = match.index + match[0].length;
+  }
+  parts.push(text.slice(last));
+  return <>{parts}</>;
 }
 
-/** His answer to a topic, from what he knows by heart. */
-function answer(topic: Topic, desk: Desk | null, close: () => void): ReactNode {
-  const season = document.documentElement.dataset.season as Season | undefined;
-  const action = "mt-3 inline-block font-display text-xs tracking-[0.22em] text-accent-ink uppercase ink-link";
-  switch (topic) {
-    case "menu":
-      return (
-        <>
-          The kitchen is cooking {season ? `the ${SEASON_META[season].italian.toLowerCase()} menu` : "the season’s menu"}{" "}
-          tonight. I would start with the nonna&rsquo;s ribollita and leave room for the bistecca.
-          <br />
-          <Link href="/menu" onClick={close} className={action}>
-            Open La Carta →
-          </Link>
-        </>
-      );
-    case "book":
-      return (
-        <>
-          With pleasure. Booking online opens very soon; until then I take tables by phone, and I answer quickly.
-          <br />
-          <a href={telHref(desk?.house.phone ?? "")} className={action}>
-            Call {desk?.house.phone} →
-          </a>
-        </>
-      );
-    case "hours":
-      return desk ? (
-        <>
-          {desk.hours.map((row) => (
-            <span key={row.days} className="block">
-              <span className="italic">{row.days}</span>
-              {": "}
-              {row.services.length === 0
-                ? "chiuso, the kitchen rests"
-                : row.services.map((s) => `${SERVICE_NAMES[s.name].toLowerCase()} ${s.opensAt}–${s.lastSeatingAt}`).join(", ")}
-            </span>
-          ))}
-          <span className="mt-2 block text-base text-pietra">The later time is the last seating.</span>
-        </>
-      ) : null;
-    case "terrace": {
-      const status = desk?.terrace;
-      if (!status) return null;
-      if (status.open) return `Aperta! Tables under the pergola until ${status.closesOn}.`;
-      if (status.reason === "season")
-        return `Not until spring, I’m afraid: it opens again on ${status.opensOn}. La Sala keeps the fire lit until then.`;
-      return status.note ?? "Closed today: rain over the Oltrarno, so every table is laid indoors.";
-    }
-    case "where":
-      return (
-        <>
-          {desk?.house.street}, in the {desk?.house.district}: five minutes from the Ponte Vecchio, the vine over the
-          door.
-          <br />
-          <Link href="/la-casa#map-title" onClick={close} className={action}>
-            See the map →
-          </Link>
-        </>
-      );
-  }
+const longDate = new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+
+function spellDate(date: string) {
+  return longDate.format(new Date(`${date}T12:00:00Z`));
 }
 
 /**
- * La Volpe's desk: a sheet where a guest talks to him, the chat in the
- * column on the left and the fox standing full height on the right. For now he
- * answers what he knows by heart; the real conversation comes with the booking.
+ * La Volpe's desk: a sheet where a guest talks to him, the chat in the column
+ * on the left and the fox standing full height on the right. He answers from
+ * the house's own data and holds out tables; a booking is made only when the
+ * guest confirms the card he hands them.
  */
 export function VolpeDesk() {
   const [open, setOpen] = useState(volpe.get().open);
-  const [desk, setDesk] = useState<Desk | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
-  const [asked, setAsked] = useState<Topic[]>([]);
-  const [thinking, setThinking] = useState(false);
+  const [transcript, setTranscript] = useState<BetaMessageParam[]>([]);
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [waiting, setWaiting] = useState(false);
+  // What happened at the desk that he should know before the guest's next words.
+  const note = useRef<string | null>(null);
+  const nextId = useRef(0);
   const dialog = useRef<HTMLDialogElement>(null);
   const log = useRef<HTMLDivElement>(null);
 
@@ -110,35 +86,102 @@ export function VolpeDesk() {
     if (!el) return;
     if (open && !el.open) el.showModal();
     if (!open && el.open) el.close();
-    if (open && !desk) {
-      fetch("/api/volpe/desk")
-        .then((res) => res.json())
-        .then(setDesk)
-        .catch(() => {});
-    }
-  }, [open, desk]);
+  }, [open]);
 
   useEffect(() => {
     log.current?.scrollTo({ top: log.current.scrollHeight, behavior: "smooth" });
-  }, [lines, thinking]);
+  }, [lines, waiting]);
 
   const close = () => volpe.setOpen(false);
+  const id = () => nextId.current++;
 
-  function ask(topic: Topic) {
-    if (thinking) return;
-    setAsked((list) => [...list, topic]);
-    setLines((list) => [...list, { from: "guest", text: ASK[topic] }]);
-    setThinking(true);
-    // He leans in to listen, then answers.
-    volpe.want("ascolta");
-    window.setTimeout(() => {
-      setLines((list) => [...list, { from: "volpe", text: answer(topic, desk, close) }]);
-      setThinking(false);
-      volpe.want(null);
-    }, 1100);
+  function say(from: "guest" | "volpe", text: string) {
+    setLines((list) => [...list, { id: id(), from, text }]);
   }
 
-  const left = (Object.keys(ASK) as Topic[]).filter((topic) => !asked.includes(topic));
+  /** Adds to his bubble as he writes, or opens a new one. */
+  function write(text: string, fresh: boolean) {
+    setLines((list) => {
+      const last = list.at(-1);
+      if (!fresh && last?.from === "volpe") return [...list.slice(0, -1), { ...last, text: last.text + text }];
+      return [...list, { id: id(), from: "volpe", text }];
+    });
+  }
+
+  async function ask(text: string) {
+    const message = text.trim().slice(0, MESSAGE_LIMIT);
+    if (!message || busy) return;
+    setDraft("");
+    say("guest", message);
+    setBusy(true);
+    setWaiting(true);
+    // He leans in to listen while he finds the answer.
+    volpe.want("ascolta");
+
+    const sent = note.current ? `(${note.current})\n\n${message}` : message;
+    note.current = null;
+    let fresh = true;
+    const offers: Offer[] = [];
+    try {
+      const response = await fetch("/api/volpe/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ transcript, message: sent }),
+      });
+      if (!response.body) throw new Error("no answer");
+      const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+      let buffer = "";
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += value;
+        const rows = buffer.split("\n");
+        buffer = rows.pop() ?? "";
+        for (const row of rows) {
+          if (!row) continue;
+          const line = JSON.parse(row) as ChatLine;
+          if (line.type === "text" || line.type === "error") {
+            if (fresh) {
+              setWaiting(false);
+              volpe.want(null);
+            }
+            write(line.text, fresh);
+            fresh = false;
+          } else if (line.type === "break") {
+            fresh = true;
+          } else if (line.type === "offer") {
+            // The card goes on the desk once he has finished saying what it is.
+            offers.push(line.offer);
+          } else if (line.type === "done") {
+            setTranscript(line.transcript);
+          }
+        }
+      }
+    } catch {
+      write("Scusi, I lost the thread for a moment. Could you say that again?", true);
+    } finally {
+      setLines((list) => [...list, ...offers.map((offer) => ({ id: id(), from: "card" as const, offer }))]);
+      setBusy(false);
+      setWaiting(false);
+      volpe.want(null);
+    }
+  }
+
+  function booked(offer: Offer, name: string) {
+    const first = name.split(" ")[0];
+    say(
+      "volpe",
+      `Perfetto, ${first}! Table ${offer.table.label} is yours on ${spellDate(offer.date)} at ${offer.time}. We’ll keep the bread warm.`,
+    );
+    note.current = `At the desk: the guest confirmed the booking, table ${offer.table.label} on ${offer.date} at ${offer.time} for ${offer.partySize}.`;
+  }
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    void ask(draft);
+  }
+
+  const started = lines.some((line) => line.from === "guest");
 
   return (
     <dialog
@@ -178,14 +221,19 @@ export function VolpeDesk() {
           className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pt-8 pb-6 [mask-image:linear-gradient(to_bottom,transparent,#000_2rem)] sm:px-10"
         >
           <Bubble from="volpe">
-            Buonasera! I&rsquo;m La Volpe, head waiter of the house. What can I do for you?
+            Buonasera! I&rsquo;m La Volpe, head waiter of the house. Ask me about tonight&rsquo;s menu, or tell me
+            when you&rsquo;d like to come and I&rsquo;ll find you a table.
           </Bubble>
-          {lines.map((line, i) => (
-            <Bubble key={i} from={line.from}>
-              {line.text}
-            </Bubble>
-          ))}
-          {thinking && (
+          {lines.map((line) =>
+            line.from === "card" ? (
+              <BookingCard key={line.id} offer={line.offer} onBooked={(name) => booked(line.offer, name)} />
+            ) : (
+              <Bubble key={line.id} from={line.from}>
+                {line.from === "volpe" ? <Words text={line.text} close={close} /> : line.text}
+              </Bubble>
+            ),
+          )}
+          {waiting && (
             <Bubble from="volpe">
               <span className="inline-flex gap-1.5 py-2" aria-label="La Volpe is answering">
                 {[0, 1, 2].map((i) => (
@@ -198,44 +246,156 @@ export function VolpeDesk() {
               </span>
             </Bubble>
           )}
-        </div>
-
-        <div className="px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-10 sm:pb-10">
-          {left.length > 0 && (
+          {!started && (
             <ul className="flex max-w-[58%] flex-col items-start gap-2 sm:max-w-[60%]">
-              {left.map((topic) => (
-                <li key={topic}>
+              {OPENERS.map((opener) => (
+                <li key={opener}>
                   <button
                     type="button"
-                    onClick={() => ask(topic)}
-                    disabled={thinking}
-                    className="rounded-full bg-intonaco/90 px-4 py-2 text-left text-lg italic ring-1 ring-accent/40 transition hover:ring-accent disabled:opacity-50"
+                    onClick={() => void ask(opener)}
+                    className="rounded-full bg-intonaco/90 px-4 py-2 text-left text-lg italic ring-1 ring-accent/40 transition hover:ring-accent"
                   >
-                    {ASK[topic]}
+                    {opener}
                   </button>
                 </li>
               ))}
             </ul>
           )}
-          <p className="mt-4 max-w-[58%] text-sm text-pietra italic sm:max-w-[60%]">
-            Soon you&rsquo;ll be able to write to me in your own words, and I&rsquo;ll book the table myself.
-          </p>
         </div>
+
+        <form
+          onSubmit={submit}
+          className="px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-10 sm:pb-10"
+        >
+          <div className="flex max-w-[72%] items-end gap-2 rounded-3xl bg-intonaco/95 p-1.5 pl-4 shadow-[0_10px_30px_-18px_rgb(42_32_25/0.7)] ring-1 ring-ink/15 focus-within:ring-accent sm:max-w-[60%]">
+            <label htmlFor="volpe-message" className="sr-only">
+              Write to La Volpe
+            </label>
+            <textarea
+              id="volpe-message"
+              rows={1}
+              value={draft}
+              maxLength={MESSAGE_LIMIT}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+                  event.preventDefault();
+                  void ask(draft);
+                }
+              }}
+              placeholder="Write to La Volpe…"
+              className="max-h-32 min-h-10 flex-1 resize-none bg-transparent py-2 text-lg leading-snug outline-none [field-sizing:content] placeholder:text-pietra placeholder:italic"
+            />
+            <button
+              type="submit"
+              disabled={busy || !draft.trim()}
+              aria-label="Send"
+              className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-intonaco transition disabled:opacity-35"
+            >
+              <svg viewBox="0 0 20 20" className="size-4" aria-hidden>
+                <path d="M3 10h12M10 4l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+        </form>
       </div>
     </dialog>
   );
 }
 
-function Bubble({ from, children }: { from: Line["from"]; children: ReactNode }) {
+function Bubble({ from, children }: { from: "guest" | "volpe"; children: ReactNode }) {
   return (
     <div
-      className={`max-w-[58%] rounded-2xl px-4 py-3 text-lg leading-snug shadow-[0_8px_20px_-16px_rgb(42_32_25/0.6)] sm:max-w-[60%] ${
+      className={`max-w-[58%] rounded-2xl px-4 py-3 text-lg leading-snug whitespace-pre-line shadow-[0_8px_20px_-16px_rgb(42_32_25/0.6)] sm:max-w-[60%] ${
         from === "volpe"
           ? "self-start rounded-tl-sm bg-intonaco ring-1 ring-ink/10"
           : "self-start rounded-tr-sm bg-accent/12 ring-1 ring-accent/25 italic sm:ml-10"
       }`}
     >
       {children}
+    </div>
+  );
+}
+
+/**
+ * The table he holds out, like a reservation slip on the desk: the guest adds
+ * their name, phone and email and confirms it themselves.
+ */
+function BookingCard({ offer, onBooked }: { offer: Offer; onBooked: (name: string) => void }) {
+  const [state, setState] = useState<"idle" | "sending" | "booked">("idle");
+  const [problem, setProblem] = useState<string | null>(null);
+
+  async function confirm(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const name = String(form.get("name") ?? "");
+    setState("sending");
+    setProblem(null);
+    try {
+      const response = await fetch("/api/volpe/book", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          date: offer.date,
+          time: offer.time,
+          partySize: offer.partySize,
+          tableLabel: offer.table.label,
+          occasion: offer.occasion,
+          notes: offer.notes,
+          name,
+          phone: String(form.get("phone") ?? ""),
+          email: String(form.get("email") ?? ""),
+        }),
+      });
+      const reply = (await response.json()) as BookReply;
+      if (reply.ok) {
+        setState("booked");
+        onBooked(name);
+      } else {
+        setState("idle");
+        setProblem(reply.reason);
+      }
+    } catch {
+      setState("idle");
+      setProblem("The line dropped. Please try again.");
+    }
+  }
+
+  const field =
+    "w-full rounded-lg bg-wash/60 px-3 py-2 text-base ring-1 ring-ink/15 outline-none placeholder:text-pietra/80 focus:ring-accent disabled:opacity-60";
+
+  return (
+    <div className="relative max-w-[58%] self-start rounded-sm bg-intonaco px-4 pt-4 pb-5 shadow-[0_14px_30px_-18px_rgb(42_32_25/0.7)] ring-1 ring-ink/15 sm:max-w-[60%] sm:px-5">
+      <p className="font-display text-[0.65rem] tracking-[0.26em] text-accent-ink uppercase">Prenotazione</p>
+      <p className="mt-2 text-xl leading-tight italic">{spellDate(offer.date)}</p>
+      <p className="mt-1 text-lg">
+        {offer.time} · {offer.partySize} {offer.partySize === 1 ? "guest" : "guests"}
+      </p>
+      <p className="mt-1 text-base text-pietra">
+        Table {offer.table.label}, {offer.table.zoneName}
+        {offer.table.tags.length > 0 && ` · ${offer.table.tags.join(", ").replaceAll("-", " ")}`}
+      </p>
+      {offer.notes && <p className="mt-1 text-base text-pietra italic">“{offer.notes}”</p>}
+
+      {state === "booked" ? (
+        <p className="mt-4 inline-block -rotate-3 rounded-sm px-3 py-1 font-display text-sm tracking-[0.3em] text-accent-ink uppercase ring-2 ring-accent/70">
+          Confermato
+        </p>
+      ) : (
+        <form onSubmit={confirm} className="mt-4 flex flex-col gap-2">
+          <input name="name" required minLength={2} maxLength={80} autoComplete="name" placeholder="Your name" aria-label="Your name" className={field} disabled={state === "sending"} />
+          <input name="phone" required type="tel" autoComplete="tel" placeholder="Phone" aria-label="Phone" pattern="\+?[\d\s().\-]{6,24}" className={field} disabled={state === "sending"} />
+          <input name="email" required type="email" autoComplete="email" placeholder="Email" aria-label="Email" className={field} disabled={state === "sending"} />
+          {problem && <p className="text-base text-accent-ink">{problem}</p>}
+          <button
+            type="submit"
+            disabled={state === "sending"}
+            className="mt-1 rounded-full bg-accent px-4 py-2 font-display text-xs tracking-[0.22em] text-intonaco uppercase transition hover:bg-accent-ink disabled:opacity-60"
+          >
+            {state === "sending" ? "Laying the table…" : "Confirm"}
+          </button>
+        </form>
+      )}
     </div>
   );
 }
