@@ -22,7 +22,7 @@ export function AdminNav() {
             key={p.href}
             href={p.href}
             aria-current={here ? "page" : undefined}
-            className={`rounded-full px-3 py-1 font-display text-[0.68rem] tracking-[0.18em] uppercase transition ${here ? "bg-ink text-intonaco" : "text-ink/70 hover:text-ink"}`}
+            className={`rounded-full px-3 py-1 font-display text-[0.68rem] tracking-[0.18em] whitespace-nowrap uppercase transition ${here ? "bg-ink text-intonaco" : "text-ink/70 hover:text-ink"}`}
           >
             {p.name}
           </Link>
