@@ -4,12 +4,14 @@ on:
   push:
     branches: [main]
   pull_request:
-  # Vercel reports each deployment back to GitHub; a finished production deploy is checked in a browser.
-  deployment_status:
+  # The live site is walked in a browser every morning, and on demand from the Actions tab.
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
 
 jobs:
   checks:
-    if: github.event_name != 'deployment_status'
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,7 +27,7 @@ jobs:
       - run: bun test
 
   e2e-production:
-    if: github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

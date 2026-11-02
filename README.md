@@ -40,4 +40,4 @@ bun test        # booking engine, admin actions, clock and prices against an in-
 bun run e2e     # Playwright, desktop and phone; read-only, so E2E_URL can point at production
 ```
 
-CI runs typecheck, lint and `bun test` on every push, and the browser tests against production after each Vercel deploy.
+CI runs typecheck, lint and `bun test` on every push, and walks the live site in a browser every morning.
