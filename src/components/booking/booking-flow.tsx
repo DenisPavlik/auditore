@@ -21,7 +21,7 @@ export const spellDate = (date: string) => longDate.format(noon(date));
 type Day = Extract<DayReply, { open: true }>;
 
 /** What each table is for this party at this time, with the guest's filters applied. */
-function statesFor(tables: PlanTable[], day: Day | null, time: string | null, party: number, zone: ZoneSlug | null, tags: Set<string>) {
+export function statesFor(tables: PlanTable[], day: Day | null, time: string | null, party: number, zone: ZoneSlug | null, tags: Set<string>) {
   const slot = day?.slots.find((s) => s.time === time);
   return Object.fromEntries(
     tables.map((t): [string, TableState] => {

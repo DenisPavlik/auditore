@@ -2,7 +2,6 @@
 
 A website for a fictional Florentine trattoria, painted like a page from a Renaissance sketchbook. The whole site turns with the seasons: palette, living hero scene, falling leaves, snow or petals, and a seasonal menu. Guests pick their own table on a floor plan and get an instant confirmation.
 
-Work in progress. See [PLAN.md](PLAN.md) for the roadmap (in Ukrainian).
 
 ## Stack
 
@@ -33,3 +32,12 @@ Hand-managed keys (`OPENAI_API_KEY`, `FAL_KEY`, `ANTHROPIC_API_KEY`) live in `.e
 | Encode loop + poster for the web | `bun scripts/encode-video.ts <in.mp4> public/hero/autumn art/approved/hero-autumn-16x9.png` |
 
 Raw generations land in `art/drafts` (ignored); approved stills live in `art/approved`.
+
+## Tests
+
+```bash
+bun test        # booking engine, admin actions, clock and prices against an in-memory Postgres (PGlite)
+bun run e2e     # Playwright, desktop and phone; read-only, so E2E_URL can point at production
+```
+
+CI runs typecheck, lint and `bun test` on every push, and the browser tests against production after each Vercel deploy.

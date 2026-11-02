@@ -119,10 +119,10 @@ export function Timeline({ book, service, canWrite }: { book: DayBook; service: 
     <div>
       <dl className="mt-6 grid grid-cols-2 gap-x-8 gap-y-3 sm:flex sm:gap-10">
         {facts.map(([n, label]) => (
-          <div key={label}>
-            <dt className="sr-only">{label}</dt>
+          // The label leads for screen readers and sits under the number for the eye.
+          <div key={label} className="flex flex-col-reverse">
+            <dt className="text-sm text-pietra italic">{label}</dt>
             <dd className="font-display text-3xl tabular-nums">{n}</dd>
-            <dd className="text-sm text-pietra italic">{label}</dd>
           </div>
         ))}
       </dl>

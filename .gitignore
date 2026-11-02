@@ -50,3 +50,7 @@ next-env.d.ts
 /art/approved/*-16x9.png
 /art/approved/*-medallion.png
 /art/approved/*-green.png
+
+# playwright test runs
+/test-results
+/playwright-report

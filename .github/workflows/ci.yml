@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Vercel reports each deployment back to GitHub; a finished production deploy is checked in a browser.
+  deployment_status:
+
+jobs:
+  checks:
+    if: github.event_name != 'deployment_status'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile
+      # Route types (PageProps, LayoutProps) come from Next's typegen, not from a build.
+      - run: bunx next typegen
+      - run: bun run typecheck
+      - run: bun run lint
+      # The booking engine and admin actions run against an in-memory Postgres (PGlite) with the real migrations.
+      - run: bun test
+
+  e2e-production:
+    if: github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+      # Read-only: the tests walk the booking up to the form and use the demo account, so nothing is written.
+      - run: bun run e2e
+        env:
+          E2E_URL: https://auditore-seven.vercel.app
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results

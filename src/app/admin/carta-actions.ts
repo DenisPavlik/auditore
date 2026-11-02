@@ -7,16 +7,9 @@ import { z } from "zod/v4";
 import { db } from "@/db";
 import { dailyDishes, menuCategories, menuItems } from "@/db/schema";
 import { refuseUnlessOwner } from "@/lib/auth";
+import { Price } from "@/lib/price";
 
 import type { Done } from "./actions";
-
-/** "18", "18,50" or "€ 18.5" as cents; the kitchen writes prices every way. */
-const Price = z
-  .string()
-  .trim()
-  .transform((v) => v.replace(/[€\s]/g, "").replace(",", "."))
-  .pipe(z.string().regex(/^\d{1,4}(\.\d{1,2})?$/, "A price like 18 or 18.50, please."))
-  .transform((v) => Math.round(Number(v) * 100));
 
 const TAGS = ["vegetarian", "vegan", "gluten-free", "for-two"] as const;
 
