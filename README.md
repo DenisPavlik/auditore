@@ -8,7 +8,7 @@ A website for a fictional Florentine trattoria, painted like a page from a Renai
 
 ## What it does
 
-- **The seasons.** Four watercolour paintings with living loops, a palette and falling leaves, snow, petals or seeds for each; the menu's specials follow the calendar.
+- **The seasons.** Four watercolour paintings with living loops, a palette and autumn leaves, snow, spring petals or olive leaves drifting past; the menu's specials follow the calendar.
 - **Booking on a floor plan.** Guests choose the hour and then the table itself, room by room; only tables that fit the party are offered, and the free tables can also be read as a list. Change or cancel from the link in the confirmation.
 - **La Volpe, the head waiter.** A fox at the corner of the page answers questions about the menu and hours and offers a free table to book (Claude Haiku with tools over the same booking engine).
 - **The back office.** A timeline of the day's tables (seat, finish, move, walk-ins), closures of the house or one room, the menu and the day's chalkboard, and the gallery, all behind Better Auth.
