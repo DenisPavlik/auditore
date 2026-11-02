@@ -50,6 +50,11 @@ async function Day({ searchParams }: { searchParams: PageProps<"/admin">["search
             →
           </Link>
           <DayPicker date={date} />
+          {date >= today && (
+            <Link href={`/admin/chiusure?d=${date}`} className={LINK}>
+              Close…
+            </Link>
+          )}
         </nav>
       </div>
       <div role="tablist" aria-label="Service" className="mt-6 inline-flex gap-1 rounded-full bg-intonaco p-1 ring-1 ring-ink/10">

@@ -1,16 +1,16 @@
 "use server";
 
 import { APIError } from "better-auth/api";
-import { and, eq } from "drizzle-orm";
-import { refresh } from "next/cache";
+import { and, eq, inArray } from "drizzle-orm";
+import { refresh, updateTag } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod/v4";
 
 import { db } from "@/db";
-import { bookings, diningTables, settings } from "@/db/schema";
+import { bookings, closures, diningTables, settings, zones } from "@/db/schema";
 import { auth, DEMO, getStaff } from "@/lib/auth";
-import { florenceInstant, isOverlap } from "@/lib/booking";
+import { addDays, florenceInstant, isOverlap } from "@/lib/booking";
 
 export type Done = { ok: true } | { ok: false; reason: string };
 
@@ -131,6 +131,71 @@ export async function addBooking(input: NewBookingInput): Promise<Done> {
     if (isOverlap(error)) return { ok: false, reason: `${b.table} is taken at ${b.time}.` };
     throw error;
   }
+  refresh();
+  return { ok: true };
+}
+
+const NewClosure = z
+  .object({
+    from: z.iso.date(),
+    to: z.iso.date(),
+    zone: z.enum(["sala", "galleria", "terrazza"]).nullable(),
+    reason: z.string().trim().min(1, "A word for the guests: why is it closed?").max(80),
+  })
+  .refine((c) => c.to >= c.from, "The last day comes before the first.");
+
+export type NewClosureInput = z.input<typeof NewClosure>;
+
+/** Closes the house, or one room, for a day or a run of days; the booking page stops offering them at once. */
+export async function addClosure(input: NewClosureInput): Promise<Done> {
+  const denied = await owner();
+  if (denied) return denied;
+  const parsed = NewClosure.safeParse(input);
+  if (!parsed.success) return { ok: false, reason: parsed.error.issues[0].message };
+  const { from, to, zone, reason } = parsed.data;
+
+  const dates: string[] = [];
+  for (let d = from; d <= to; d = addDays(d, 1)) dates.push(d);
+  if (dates.length > 92) return { ok: false, reason: "Three months at most in one go." };
+
+  const [room] = zone ? await db.select({ id: zones.id }).from(zones).where(eq(zones.slug, zone)) : [null];
+  const existing = await db.select({ date: closures.date, zoneId: closures.zoneId }).from(closures).where(inArray(closures.date, dates));
+  // A day already closed whole, or this room already closed that day, is left as it is.
+  const fresh = dates.filter((d) => !existing.some((c) => c.date === d && (c.zoneId === null || c.zoneId === (room?.id ?? null))));
+  if (!fresh.length) return { ok: false, reason: "Those days are already closed that way." };
+
+  if (!room) {
+    // Closing the whole house makes the room closures of those days redundant.
+    await db.delete(closures).where(inArray(closures.date, fresh));
+  }
+  await db.insert(closures).values(fresh.map((date) => ({ date, zoneId: room?.id ?? null, reason })));
+  updateTag("terrace");
+  refresh();
+  return { ok: true };
+}
+
+/** Opens again what a closure shut. */
+export async function reopen(ids: number[]): Promise<Done> {
+  const denied = await owner();
+  if (denied) return denied;
+  const list = z.array(z.number().int().positive()).min(1).max(100).parse(ids);
+  await db.delete(closures).where(inArray(closures.id, list));
+  updateTag("terrace");
+  refresh();
+  return { ok: true };
+}
+
+const MonthDay = z.string().regex(/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/, "Pick a day and a month.");
+
+/** The terrace's season, the same every year: from the day the vine is dressed to the day the chairs are stacked. */
+export async function setTerraceSeason(opensOn: string, closesOn: string): Promise<Done> {
+  const denied = await owner();
+  if (denied) return denied;
+  const parsed = z.object({ opensOn: MonthDay, closesOn: MonthDay }).safeParse({ opensOn, closesOn });
+  if (!parsed.success) return { ok: false, reason: parsed.error.issues[0].message };
+  if (parsed.data.closesOn <= parsed.data.opensOn) return { ok: false, reason: "The season has to close after it opens, in the same year." };
+  await db.update(settings).set({ terraceOpensOn: parsed.data.opensOn, terraceClosesOn: parsed.data.closesOn }).where(eq(settings.id, 1));
+  updateTag("terrace");
   refresh();
   return { ok: true };
 }

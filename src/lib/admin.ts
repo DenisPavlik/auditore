@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, eq, gte, lt } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, lt } from "drizzle-orm";
 
 import { db } from "@/db";
 import { bookings, closures, diningTables, serviceHours, settings, zones } from "@/db/schema";
@@ -106,5 +106,113 @@ export async function getDayBook(date: string): Promise<DayBook> {
       end: florenceWallClock(endsAt).date > date ? "24:00" : florenceWallClock(endsAt).time,
       bookedOn: florenceWallClock(createdAt).date,
     })),
+  };
+}
+
+export type Closure = { id: number; date: string; zone: ZoneSlug | null; reason: string | null };
+
+/** A run of days closed the same way, as the list of closures shows it. */
+export type ClosureRun = { ids: number[]; from: string; to: string; zone: ZoneSlug | null; reason: string | null };
+
+export type CalendarCell = {
+  date: string;
+  /** The house's weekly day of rest, with no service at all. */
+  rest: boolean;
+  terrace: boolean;
+  closures: Closure[];
+  /** Live bookings per room, so the maître sees whom a closure touches. */
+  booked: Record<ZoneSlug, number>;
+};
+
+export type ClosureBook = {
+  today: string;
+  month: string;
+  months: { month: string; days: CalendarCell[] }[];
+  upcoming: ClosureRun[];
+  season: { opensOn: string; closesOn: string };
+};
+
+function monthDays(month: string) {
+  const first = `${month}-01`;
+  const days: string[] = [];
+  for (let d = first; d.startsWith(month); d = addDays(d, 1)) days.push(d);
+  return days;
+}
+
+export function nextMonth(month: string, by = 1) {
+  const [y, m] = month.split("-").map(Number);
+  const at = new Date(Date.UTC(y, m - 1 + by, 1));
+  return at.toISOString().slice(0, 7);
+}
+
+export async function getClosureBook(month: string): Promise<ClosureBook> {
+  const today = florenceNow().date;
+  const shown = [month, nextMonth(month)];
+  const first = `${shown[0]}-01`;
+  const end = `${nextMonth(month, 2)}-01`;
+  const [hours, [config], inView, ahead, live] = await Promise.all([
+    db.selectDistinct({ weekday: serviceHours.weekday }).from(serviceHours),
+    db.select().from(settings).limit(1),
+    db
+      .select({ id: closures.id, date: closures.date, zone: zones.slug, reason: closures.reason })
+      .from(closures)
+      .leftJoin(zones, eq(closures.zoneId, zones.id))
+      .where(and(gte(closures.date, first), lt(closures.date, end))),
+    db
+      .select({ id: closures.id, date: closures.date, zone: zones.slug, reason: closures.reason })
+      .from(closures)
+      .leftJoin(zones, eq(closures.zoneId, zones.id))
+      .where(gte(closures.date, today))
+      .orderBy(asc(closures.date)),
+    db
+      .select({ startsAt: bookings.startsAt, zone: zones.slug })
+      .from(bookings)
+      .innerJoin(diningTables, eq(bookings.tableId, diningTables.id))
+      .innerJoin(zones, eq(diningTables.zoneId, zones.id))
+      .where(
+        and(
+          gte(bookings.startsAt, florenceInstant(first, "00:00")),
+          lt(bookings.startsAt, florenceInstant(end, "00:00")),
+          inArray(bookings.status, ["confirmed", "seated"]),
+        ),
+      ),
+  ]);
+
+  const serving = new Set(hours.map((h) => h.weekday));
+  const opensOn = config?.terraceOpensOn ?? "04-15";
+  const closesOn = config?.terraceClosesOn ?? "10-31";
+  const booked = new Map<string, Record<ZoneSlug, number>>();
+  for (const b of live) {
+    const date = florenceWallClock(b.startsAt).date;
+    const counts = booked.get(date) ?? { sala: 0, galleria: 0, terrazza: 0 };
+    counts[b.zone as ZoneSlug]++;
+    booked.set(date, counts);
+  }
+
+  // Consecutive days closed the same way read as one line: "12–14 Nov, La Terrazza, private event".
+  const upcoming: ClosureRun[] = [];
+  for (const c of ahead) {
+    const last = upcoming.at(-1);
+    if (last && last.zone === c.zone && last.reason === c.reason && addDays(last.to, 1) === c.date) {
+      last.to = c.date;
+      last.ids.push(c.id);
+    } else upcoming.push({ ids: [c.id], from: c.date, to: c.date, zone: c.zone as ZoneSlug | null, reason: c.reason });
+  }
+
+  return {
+    today,
+    month,
+    months: shown.map((m) => ({
+      month: m,
+      days: monthDays(m).map((date) => ({
+        date,
+        rest: !serving.has(new Date(`${date}T12:00:00Z`).getUTCDay()),
+        terrace: date.slice(5) >= opensOn && date.slice(5) <= closesOn,
+        closures: inView.filter((c) => c.date === date).map((c) => ({ ...c, zone: c.zone as ZoneSlug | null })),
+        booked: booked.get(date) ?? { sala: 0, galleria: 0, terrazza: 0 },
+      })),
+    })),
+    upcoming,
+    season: { opensOn, closesOn },
   };
 }
