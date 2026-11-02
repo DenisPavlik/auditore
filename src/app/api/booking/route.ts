@@ -22,6 +22,8 @@ const Body = z.object({
     .regex(/^\+?[\d\s().-]{6,24}$/),
   /** The manage token of a booking this one takes the place of. */
   replaces: z.string().max(80).optional(),
+  /** Booked on the card La Volpe held out, rather than on the booking page. */
+  via: z.literal("volpe").optional(),
 });
 
 /**
@@ -38,11 +40,12 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, reason: "Too many tries today. Please call us instead." } satisfies BookReply, { status: 429 });
   }
 
-  const { name, email, phone, replaces, ...wanted } = parsed.data;
+  const { name, email, phone, replaces, via, ...wanted } = parsed.data;
   const result = await createBooking(
     { ...wanted, occasion: wanted.occasion || undefined, notes: wanted.notes || undefined },
     { name, email, phone },
     replaces,
+    via ?? "web",
   );
   if (!result.ok) return Response.json(result satisfies BookReply, { status: 409 });
 

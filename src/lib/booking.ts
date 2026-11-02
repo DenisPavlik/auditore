@@ -47,7 +47,7 @@ export function florenceWallClock(at: Date) {
   return { date: `${parts.year}-${parts.month}-${parts.day}`, time: `${parts.hour}:${parts.minute}` };
 }
 
-function addDays(date: string, days: number) {
+export function addDays(date: string, days: number) {
   const day = new Date(`${date}T12:00:00Z`);
   day.setUTCDate(day.getUTCDate() + days);
   return day.toISOString().slice(0, 10);
@@ -349,6 +349,7 @@ export async function createBooking(
   request: Request,
   guest: Guest,
   replaces?: string,
+  source: "web" | "volpe" = "web",
 ): Promise<{ ok: true; booking: Booked } | { ok: false; reason: string }> {
   const old = replaces ? await getBooking(replaces) : null;
   if (replaces && (!old || old.status !== "confirmed" || !old.upcoming)) return { ok: false, reason: "That booking can no longer be changed." };
@@ -381,7 +382,7 @@ export async function createBooking(
         phone: guest.phone,
         occasion: offer.occasion,
         notes: offer.notes,
-        source: "web",
+        source,
       })
       .returning({ id: bookings.id, token: bookings.manageToken });
     return { ok: true, booking: { ...offer, id: row.id, token: row.token, name: guest.name, email: guest.email } };
@@ -467,7 +468,7 @@ export async function cancelBooking(token: string): Promise<{ ok: true } | { ok:
 }
 
 /** Postgres exclusion_violation, however deep the driver wraps it. */
-function isOverlap(error: unknown): boolean {
+export function isOverlap(error: unknown): boolean {
   for (let e = error as { code?: string; cause?: unknown } | undefined; e; e = e.cause as typeof e) {
     if (e.code === "23P01") return true;
   }

@@ -459,6 +459,7 @@ function BookingCard({ offer, onBooked }: { offer: Offer; onBooked: (name: strin
           name,
           phone: String(form.get("phone") ?? ""),
           email: String(form.get("email") ?? ""),
+          via: "volpe",
         }),
       });
       const reply = (await response.json()) as BookReply;

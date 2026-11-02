@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import { EB_Garamond, Marcellus } from "next/font/google";
 
-import { InkBlots } from "@/components/atmosphere/ink-blots";
 import { PigmentCursor } from "@/components/atmosphere/pigment-cursor";
-import { SeasonParticles } from "@/components/atmosphere/season-particles";
-import { LaVolpe } from "@/components/volpe/la-volpe";
 import { seasonBootScript } from "@/lib/seasons";
 
 import "./globals.css";
@@ -46,13 +43,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col">
         {children}
-        <footer className="px-4 py-8 text-center text-sm text-pietra italic sm:px-10">
-          Nulla è reale, tutto è lecito.
-        </footer>
-        <LaVolpe />
-        <SeasonParticles layer="back" />
-        <SeasonParticles layer="front" />
-        <InkBlots />
         <PigmentCursor />
       </body>
     </html>
