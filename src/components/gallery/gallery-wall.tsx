@@ -76,8 +76,9 @@ export function GalleryWall({ pictures }: { pictures: GalleryPicture[] }) {
                   width={picture.width}
                   height={picture.height}
                   sizes={hang(picture).sizes}
-                  // The first pictures are above the fold.
-                  loading={i < 3 ? "eager" : "lazy"}
+                  // The first picture is what the guest sees first; the rest wait their turn on the wall.
+                  loading={i === 0 ? "eager" : "lazy"}
+                  fetchPriority={i === 0 ? "high" : "auto"}
                   className="h-auto w-full"
                 />
               </span>
