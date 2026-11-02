@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 
 import { HeroScene } from "@/components/hero/hero-scene";
 import { FourSeasons } from "@/components/home/four-seasons";
+import { RestaurantData } from "@/components/home/restaurant-data";
 import { Flourish, SectionHeading } from "@/components/home/section-heading";
 import { Terrace } from "@/components/home/terrace";
 import { Visit } from "@/components/home/visit";
@@ -19,6 +20,7 @@ export default async function Home() {
 
   return (
     <>
+      <RestaurantData />
       <section className="relative mx-auto flex w-full max-w-[2200px] flex-col lg:min-h-svh">
         <SiteHeader />
 

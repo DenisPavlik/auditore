@@ -3,6 +3,7 @@ import { EB_Garamond, Marcellus } from "next/font/google";
 
 import { PigmentCursor } from "@/components/atmosphere/pigment-cursor";
 import { seasonBootScript } from "@/lib/seasons";
+import { SITE_URL } from "@/lib/site";
 
 import "./globals.css";
 
@@ -26,6 +27,9 @@ export const metadata: Metadata = {
   },
   description:
     "A Florentine trattoria whose menu, terrace and tables follow the seasons. Book a table in La Sala or under the wisteria of the Terrazza.",
+  metadataBase: new URL(SITE_URL),
+  openGraph: { siteName: "Auditore", type: "website", locale: "en_GB" },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
