@@ -3,7 +3,7 @@ import "server-only";
 import { and, asc, eq, gte, inArray, lt } from "drizzle-orm";
 
 import { db } from "@/db";
-import { bookings, closures, dailyDishes, diningTables, menuCategories, menuItems, serviceHours, settings, zones } from "@/db/schema";
+import { bookings, closures, dailyDishes, diningTables, galleryImages, menuCategories, menuItems, serviceHours, settings, zones } from "@/db/schema";
 
 import { addDays, florenceInstant, florenceNow, florenceWallClock, weekdayOf, type ZoneSlug } from "./booking";
 
@@ -238,4 +238,9 @@ export async function getCarta(): Promise<{ today: string; chapters: CartaChapte
     chapters: chapters.map((c) => ({ id: c.id, slug: c.slug, name: c.name, subtitle: c.subtitle, dishes: dishes.filter((d) => d.categoryId === c.id) })),
     daily,
   };
+}
+
+/** The gallery read fresh, not through its cache, so a change shows in the admin at once. */
+export async function getWall() {
+  return db.select().from(galleryImages).orderBy(asc(galleryImages.sortOrder), asc(galleryImages.id));
 }

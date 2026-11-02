@@ -1,6 +1,6 @@
 /**
  * Makes (or resets) the two staff accounts of the admin:
- * the owner from OWNER_EMAIL / OWNER_PASSWORD in .env.local, and the read-only demo.
+ * the owner from OWNER_EMAIL / OWNER_PASSWORD in .env.development.local, and the read-only demo.
  *
  *   bun scripts/staff.ts
  */

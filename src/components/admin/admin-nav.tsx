@@ -7,6 +7,7 @@ const PAGES = [
   { href: "/admin", name: "Il Turno" },
   { href: "/admin/chiusure", name: "Chiusure" },
   { href: "/admin/carta", name: "Carta" },
+  { href: "/admin/galleria", name: "Galleria" },
 ] as const;
 
 /** The rooms of the back office, the one you stand in marked. */
