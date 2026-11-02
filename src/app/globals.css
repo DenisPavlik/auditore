@@ -135,6 +135,14 @@ body {
 [data-season="spring"] .hero-poster { --hero-poster: url("/hero/spring.webp"); }
 [data-season="summer"] .hero-poster { --hero-poster: url("/hero/summer.webp"); }
 
+/* A phone gets the painting at the size it can show. */
+@media (width < 40rem) {
+  [data-season="autumn"] .hero-poster { --hero-poster: url("/hero/autumn-phone.webp"); }
+  [data-season="winter"] .hero-poster { --hero-poster: url("/hero/winter-phone.webp"); }
+  [data-season="spring"] .hero-poster { --hero-poster: url("/hero/spring-phone.webp"); }
+  [data-season="summer"] .hero-poster { --hero-poster: url("/hero/summer-phone.webp"); }
+}
+
 @media (width >= 64rem) {
   .hero-scene {
     /* Anchor right so any crop eats the paper margin, not the empty third the headline needs. */
