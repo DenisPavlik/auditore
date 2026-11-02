@@ -45,3 +45,11 @@ export async function getStaff(): Promise<Staff | null> {
   const { id, name, email, role } = session.user;
   return { id, name, email, role: role === "owner" ? "owner" : "demo" };
 }
+
+/** Only the owner writes in the book; the demo account is told so, kindly. Null means go ahead. */
+export async function refuseUnlessOwner(): Promise<{ ok: false; reason: string } | null> {
+  const staff = await getStaff();
+  if (!staff) return { ok: false, reason: "Sign in again, the session has ended." };
+  if (staff.role !== "owner") return { ok: false, reason: "The demo can look around, but not write in the book." };
+  return null;
+}

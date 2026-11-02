@@ -192,6 +192,21 @@ export const menuItems = pgTable(
   (t) => [index("menu_items_category").on(t.categoryId)],
 );
 
+/** What the kitchen cooks for one day only, written on the board by the door. */
+export const dailyDishes = pgTable(
+  "daily_dishes",
+  {
+    id: serial("id").primaryKey(),
+    date: date("date").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    /** Euro cents. */
+    priceCents: integer("price_cents").notNull(),
+    sortOrder: smallint("sort_order").notNull().default(0),
+  },
+  (t) => [index("daily_dishes_date").on(t.date)],
+);
+
 export const galleryImages = pgTable("gallery_images", {
   id: serial("id").primaryKey(),
   url: text("url").notNull(),

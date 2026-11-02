@@ -1,10 +1,10 @@
 import "server-only";
 
-import { asc } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { db } from "@/db";
-import { menuCategories, menuItems } from "@/db/schema";
+import { dailyDishes, menuCategories, menuItems } from "@/db/schema";
 
 export type MenuItem = typeof menuItems.$inferSelect;
 export type MenuCategory = typeof menuCategories.$inferSelect & { items: MenuItem[] };
@@ -26,13 +26,21 @@ export async function getMenu(): Promise<MenuCategory[]> {
   }));
 }
 
-const euro = new Intl.NumberFormat("en-IE", {
-  style: "currency",
-  currency: "EUR",
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
-});
+const euro = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const euroCents = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+/** €18 for whole euros, €14.50 otherwise, as a menu writes it. */
 export function formatPrice(cents: number) {
-  return euro.format(cents / 100);
+  return (cents % 100 ? euroCents : euro).format(cents / 100);
+}
+
+export type DailyDish = typeof dailyDishes.$inferSelect;
+
+/** The board by the door for one day. Invalidate with updateTag("daily"). */
+export async function getDailyDishes(date: string): Promise<DailyDish[]> {
+  "use cache";
+  cacheTag("daily");
+  cacheLife("hours");
+
+  return db.select().from(dailyDishes).where(eq(dailyDishes.date, date)).orderBy(asc(dailyDishes.sortOrder), asc(dailyDishes.id));
 }

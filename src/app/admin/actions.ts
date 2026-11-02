@@ -9,7 +9,7 @@ import { z } from "zod/v4";
 
 import { db } from "@/db";
 import { bookings, closures, diningTables, settings, zones } from "@/db/schema";
-import { auth, DEMO, getStaff } from "@/lib/auth";
+import { auth, DEMO, refuseUnlessOwner } from "@/lib/auth";
 import { addDays, florenceInstant, isOverlap } from "@/lib/booking";
 
 export type Done = { ok: true } | { ok: false; reason: string };
@@ -32,18 +32,10 @@ export async function signOut() {
   redirect("/admin/accedi");
 }
 
-/** Only the owner writes in the book; the demo account is told so, kindly. */
-async function owner(): Promise<Done | null> {
-  const staff = await getStaff();
-  if (!staff) return { ok: false, reason: "Sign in again, the session has ended." };
-  if (staff.role !== "owner") return { ok: false, reason: "The demo can look around, but not write in the book." };
-  return null;
-}
-
 const Status = z.enum(["confirmed", "seated", "completed", "no_show", "cancelled"]);
 
 export async function setStatus(id: string, next: z.infer<typeof Status>): Promise<Done> {
-  const denied = await owner();
+  const denied = await refuseUnlessOwner();
   if (denied) return denied;
   const status = Status.parse(next);
   const [row] = await db.select({ startsAt: bookings.startsAt, endsAt: bookings.endsAt }).from(bookings).where(eq(bookings.id, z.uuid().parse(id)));
@@ -64,7 +56,7 @@ export async function setStatus(id: string, next: z.infer<typeof Status>): Promi
 }
 
 export async function moveBooking(id: string, table: string): Promise<Done> {
-  const denied = await owner();
+  const denied = await refuseUnlessOwner();
   if (denied) return denied;
   const [[booking], [target]] = await Promise.all([
     db.select({ partySize: bookings.partySize }).from(bookings).where(eq(bookings.id, z.uuid().parse(id))),
@@ -98,7 +90,7 @@ export type NewBookingInput = z.input<typeof NewBooking>;
 
 /** A booking taken by the house itself: a call at the desk, or guests at the door. */
 export async function addBooking(input: NewBookingInput): Promise<Done> {
-  const denied = await owner();
+  const denied = await refuseUnlessOwner();
   if (denied) return denied;
   const parsed = NewBooking.safeParse(input);
   if (!parsed.success) return { ok: false, reason: parsed.error.issues[0].message };
@@ -148,7 +140,7 @@ export type NewClosureInput = z.input<typeof NewClosure>;
 
 /** Closes the house, or one room, for a day or a run of days; the booking page stops offering them at once. */
 export async function addClosure(input: NewClosureInput): Promise<Done> {
-  const denied = await owner();
+  const denied = await refuseUnlessOwner();
   if (denied) return denied;
   const parsed = NewClosure.safeParse(input);
   if (!parsed.success) return { ok: false, reason: parsed.error.issues[0].message };
@@ -176,7 +168,7 @@ export async function addClosure(input: NewClosureInput): Promise<Done> {
 
 /** Opens again what a closure shut. */
 export async function reopen(ids: number[]): Promise<Done> {
-  const denied = await owner();
+  const denied = await refuseUnlessOwner();
   if (denied) return denied;
   const list = z.array(z.number().int().positive()).min(1).max(100).parse(ids);
   await db.delete(closures).where(inArray(closures.id, list));
@@ -189,7 +181,7 @@ const MonthDay = z.string().regex(/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/, "Pi
 
 /** The terrace's season, the same every year: from the day the vine is dressed to the day the chairs are stacked. */
 export async function setTerraceSeason(opensOn: string, closesOn: string): Promise<Done> {
-  const denied = await owner();
+  const denied = await refuseUnlessOwner();
   if (denied) return denied;
   const parsed = z.object({ opensOn: MonthDay, closesOn: MonthDay }).safeParse({ opensOn, closesOn });
   if (!parsed.success) return { ok: false, reason: parsed.error.issues[0].message };

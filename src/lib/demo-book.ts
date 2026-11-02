@@ -3,7 +3,7 @@ import "server-only";
 import { and, eq, gte, inArray, like, lt, lte, notInArray, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { bookings, closures, diningTables, serviceHours, settings, zones } from "@/db/schema";
+import { bookings, closures, dailyDishes, diningTables, serviceHours, settings, zones } from "@/db/schema";
 
 import { addDays, florenceInstant, florenceNow, weekdayOf } from "./booking";
 
@@ -32,6 +32,22 @@ const NOTES = [
 ];
 
 const OCCASIONS = ["Birthday", "Anniversary", "Business dinner", "Proposal"];
+
+/** What the nonna might chalk up on any morning. */
+const BOARD = [
+  { name: "Pici all'aglione", description: "Hand-rolled pici, slow garlic and tomato from Valdichiana.", price: 1600 },
+  { name: "Trippa alla fiorentina", description: "Tripe stewed in tomato, finished with parmigiano.", price: 1800 },
+  { name: "Pappa al pomodoro", description: "Yesterday's bread, tomato and basil, served warm.", price: 1200 },
+  { name: "Cinghiale in umido", description: "Wild boar braised with olives and juniper.", price: 2600 },
+  { name: "Tortelli di patate", description: "Mugello potato tortelli with butter and sage.", price: 1700 },
+  { name: "Baccalà alla livornese", description: "Salt cod in a tomato and caper sauce. Fridays only, as it should be.", price: 2200 },
+  { name: "Lampredotto", description: "The Florentine street classic, with salsa verde.", price: 1400 },
+  { name: "Zuppa di farro", description: "Garfagnana spelt with beans and rosemary oil.", price: 1300 },
+  { name: "Coniglio al finocchietto", description: "Rabbit roasted with wild fennel.", price: 2400 },
+  { name: "Castagnaccio", description: "Chestnut flour cake with pine nuts and rosemary.", price: 800 },
+  { name: "Crostata di ricotta", description: "Sheep's ricotta tart with a little lemon zest.", price: 900 },
+  { name: "Polenta con funghi", description: "Soft polenta with porcini from the Casentino.", price: 1900 },
+];
 
 /** The same day always gets the same guests, so the book doesn't reshuffle when it is filled again. */
 function randomFor(seed: string) {
@@ -157,8 +173,24 @@ export async function fillDemoBook() {
       // Someone real booked a table there while the day was being laid; leave that day as it is.
     }
   }
+  // The chalkboard for the coming week, on the days the kitchen works and nobody has written it yet.
+  const chalked = await db.selectDistinct({ date: dailyDishes.date }).from(dailyDishes).where(gte(dailyDishes.date, today));
+  const board = days
+    .filter((d) => d >= today && d <= addDays(today, 6))
+    .filter((d) => !chalked.some((c) => c.date === d))
+    .filter((d) => hours.some((h) => h.weekday === new Date(`${d}T12:00:00Z`).getUTCDay()))
+    .flatMap((date) => {
+      const random = randomFor(`board${date}`);
+      const pool = [...BOARD];
+      return Array.from({ length: 2 + Math.floor(random() * 2) }, (_, i) => {
+        const dish = pool.splice(Math.floor(random() * pool.length), 1)[0];
+        return { date, name: dish.name, description: dish.description, priceCents: dish.price, sortOrder: i };
+      });
+    });
+  if (board.length) await db.insert(dailyDishes).values(board);
+
   await advanceDemoBook();
-  return { added };
+  return { added, chalked: board.length };
 }
 
 /**

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { ChapterIndex, type Chapter } from "@/components/menu/chapter-index";
 import { MARKS, MenuLine } from "@/components/menu/menu-line";
 import { SeasonTabs } from "@/components/menu/season-tabs";
+import { TodayBoard } from "@/components/menu/today-board";
 import { SiteHeader } from "@/components/site-header";
 import { getMenu, type MenuItem } from "@/lib/menu";
 import { SEASON_LINES, SEASON_META, SEASONS } from "@/lib/seasons";
@@ -49,6 +51,10 @@ export default async function MenuPage() {
             weighed at the table.
           </p>
         </header>
+
+        <Suspense>
+          <TodayBoard />
+        </Suspense>
 
         <section
           aria-labelledby="specials-title"

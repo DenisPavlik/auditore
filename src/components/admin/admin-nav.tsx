@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const PAGES = [
   { href: "/admin", name: "Il Turno" },
   { href: "/admin/chiusure", name: "Chiusure" },
+  { href: "/admin/carta", name: "Carta" },
 ] as const;
 
 /** The rooms of the back office, the one you stand in marked. */

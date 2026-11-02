@@ -3,7 +3,7 @@ import "server-only";
 import { and, asc, eq, gte, inArray, lt } from "drizzle-orm";
 
 import { db } from "@/db";
-import { bookings, closures, diningTables, serviceHours, settings, zones } from "@/db/schema";
+import { bookings, closures, dailyDishes, diningTables, menuCategories, menuItems, serviceHours, settings, zones } from "@/db/schema";
 
 import { addDays, florenceInstant, florenceNow, florenceWallClock, weekdayOf, type ZoneSlug } from "./booking";
 
@@ -214,5 +214,28 @@ export async function getClosureBook(month: string): Promise<ClosureBook> {
     })),
     upcoming,
     season: { opensOn, closesOn },
+  };
+}
+
+export type CartaDish = typeof menuItems.$inferSelect;
+export type CartaChapter = { id: number; slug: string; name: string; subtitle: string | null; dishes: CartaDish[] };
+export type CartaDaily = typeof dailyDishes.$inferSelect;
+
+/** The whole menu as the kitchen keeps it, sold-out dishes included, and the board for the week ahead. */
+export async function getCarta(): Promise<{ today: string; chapters: CartaChapter[]; daily: CartaDaily[] }> {
+  const today = florenceNow().date;
+  const [chapters, dishes, daily] = await Promise.all([
+    db.select().from(menuCategories).orderBy(asc(menuCategories.sortOrder)),
+    db.select().from(menuItems).orderBy(asc(menuItems.sortOrder), asc(menuItems.id)),
+    db
+      .select()
+      .from(dailyDishes)
+      .where(and(gte(dailyDishes.date, today), lt(dailyDishes.date, addDays(today, 7))))
+      .orderBy(asc(dailyDishes.date), asc(dailyDishes.sortOrder), asc(dailyDishes.id)),
+  ]);
+  return {
+    today,
+    chapters: chapters.map((c) => ({ id: c.id, slug: c.slug, name: c.name, subtitle: c.subtitle, dishes: dishes.filter((d) => d.categoryId === c.id) })),
+    daily,
   };
 }

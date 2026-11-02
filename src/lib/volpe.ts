@@ -11,7 +11,7 @@ import { volpeVisits } from "@/db/schema";
 
 import { findOffer, florenceNow, getAvailability, weekdayOf, type Offer, type ZoneSlug } from "./booking";
 import { getHours, getTerraceStatus, HOUSE } from "./house";
-import { formatPrice, getMenu } from "./menu";
+import { formatPrice, getDailyDishes, getMenu } from "./menu";
 import { seasonForDate, SEASON_META } from "./seasons";
 
 export const VOLPE_MODEL = "claude-haiku-5-5";
@@ -97,7 +97,7 @@ export function volpeTools(emit: (event: VolpeEvent) => void) {
   const searchMenu = betaZodTool({
     name: "search_menu",
     description:
-      "Search the menu: dishes and wines with prices and diet marks. Filter by diet, course or words; with no filters it returns the whole menu. Seasonal specials are for the current season unless another season is asked for.",
+      "Search the menu: dishes and wines with prices and diet marks. Filter by diet, course or words; with no filters it returns the whole menu. Seasonal specials are for the current season unless another season is asked for. Also returns today's dishes from the chalkboard, cooked today only.",
     inputSchema: z.object({
       diet: z.enum(["vegetarian", "vegan", "gluten-free"]).optional(),
       course: z
@@ -127,7 +127,12 @@ export function volpeTools(emit: (event: VolpeEvent) => void) {
               marks: item.tags,
             })),
         );
-      return JSON.stringify(dishes.length ? dishes : { none: "Nothing on the menu matches." });
+      // The chalkboard is today's only, so it comes along whatever was asked.
+      const board = (await getDailyDishes(florenceNow().date)).map((d) => ({ name: d.name, description: d.description, price: formatPrice(d.priceCents) }));
+      return JSON.stringify({
+        dishes: dishes.length ? dishes : "Nothing on the menu matches.",
+        ...(board.length && { todayOnTheBoard: board }),
+      });
     },
   });
 
