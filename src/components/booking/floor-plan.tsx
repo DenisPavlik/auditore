@@ -96,10 +96,12 @@ type DrawingProps = {
   terraceLaid: boolean;
   /** Bigger labels and tap targets, for a room seen on its own on a phone. */
   close?: boolean;
+  /** The room shown up close; the others' tables are only glimpsed at its edges, so they stay silent. */
+  room?: ZoneSlug;
 };
 
 /** The house drawn in ink over washes of each room's pigment, with every table on it. */
-function Drawing({ tables, states, chosen, onChoose, terraceLaid, close = false }: DrawingProps) {
+function Drawing({ tables, states, chosen, onChoose, terraceLaid, close = false, room }: DrawingProps) {
   const label = close ? 20 : 14;
   // The plan is drawn twice (whole house, and a room up close), so its patterns need their own names.
   const id = useId().replaceAll(":", "");
@@ -209,18 +211,18 @@ function Drawing({ tables, states, chosen, onChoose, terraceLaid, close = false 
         const mine = t.label === chosen;
         const ink = mine ? "var(--accent-ink)" : "var(--ink)";
         const open = state === "free";
+        const elsewhere = room !== undefined && t.zone !== room;
+        const control = elsewhere
+          ? { "aria-hidden": true }
+          : { role: "button", tabIndex: open ? 0 : -1, "aria-pressed": mine, "aria-disabled": !open, "aria-label": describe(t, state) };
         return (
           <g
             key={t.label}
-            data-table={t.label}
-            role="button"
-            tabIndex={open ? 0 : -1}
-            aria-pressed={mine}
-            aria-disabled={!open}
-            aria-label={describe(t, state)}
+            data-table={elsewhere ? undefined : t.label}
+            {...control}
             // Up close the room reads taps itself, as they share the finger with pinch and drag.
             onClick={close ? undefined : () => open && onChoose(t.label)}
-            onKeyDown={(event) => press(event, t)}
+            onKeyDown={elsewhere ? undefined : (event) => press(event, t)}
             className={`plan-table outline-none ${open ? "cursor-pointer" : ""}`}
             data-state={state}
             opacity={state === "unfit" || state === "closed" ? 0.32 : 1}
@@ -271,6 +273,18 @@ export function FloorPlan({ zone: shown, onZone, ...props }: PlanProps & { zone?
   const zone = shown ?? own;
   const setZone = onZone ?? setOwn;
   const free = (slug: ZoneSlug) => props.tables.filter((t) => t.zone === slug && props.states[t.label] === "free").length;
+  const ids = useId().replaceAll(":", "");
+  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  /** Up and down the rail with the arrow keys, as a list of tabs is walked. */
+  function walk(event: KeyboardEvent, at: number) {
+    const to = { ArrowDown: at + 1, ArrowUp: at - 1, Home: 0, End: ZONES.length - 1 }[event.key];
+    if (to === undefined) return;
+    event.preventDefault();
+    const next = (to + ZONES.length) % ZONES.length;
+    setZone(ZONES[next].slug);
+    tabs.current[next]?.focus();
+  }
 
   return (
     <div>
@@ -282,16 +296,23 @@ export function FloorPlan({ zone: shown, onZone, ...props }: PlanProps & { zone?
 
       <div className="flex gap-3 sm:hidden">
         <ul role="tablist" aria-label="Rooms" aria-orientation="vertical" className="flex w-24 shrink-0 flex-col gap-2">
-          {ZONES.map((z) => {
+          {ZONES.map((z, i) => {
             const active = z.slug === zone;
             const count = free(z.slug);
             return (
-              <li key={z.slug}>
+              <li key={z.slug} role="presentation">
                 <button
+                  ref={(el) => {
+                    tabs.current[i] = el;
+                  }}
                   type="button"
                   role="tab"
+                  id={`${ids}-${z.slug}`}
                   aria-selected={active}
+                  aria-controls={`${ids}-room`}
+                  tabIndex={active ? 0 : -1}
                   onClick={() => setZone(z.slug)}
+                  onKeyDown={(event) => walk(event, i)}
                   className={`flex w-full flex-col items-start gap-1 rounded-lg px-2.5 py-2.5 text-left transition ${
                     active ? "bg-intonaco ring-1 ring-ink/20 shadow-[0_8px_20px_-14px_rgb(42_32_25/0.7)]" : "ring-1 ring-transparent"
                   }`}
@@ -306,7 +327,9 @@ export function FloorPlan({ zone: shown, onZone, ...props }: PlanProps & { zone?
             );
           })}
         </ul>
-        <Room key={zone} slug={zone} {...props} />
+        <div role="tabpanel" id={`${ids}-room`} aria-labelledby={`${ids}-${zone}`} className="min-w-0 flex-1">
+          <Room key={zone} slug={zone} {...props} />
+        </div>
       </div>
     </div>
   );
@@ -391,7 +414,7 @@ function Room({ slug, ...props }: PlanProps & { slug: ZoneSlug }) {
   }
 
   return (
-    <div className="relative min-w-0 flex-1 overflow-hidden rounded-lg bg-intonaco/60 ring-1 ring-ink/10" style={{ aspectRatio: `${fit.w} / ${fit.h}`, maxHeight: "62svh" }}>
+    <div className="relative w-full overflow-hidden rounded-lg bg-intonaco/60 ring-1 ring-ink/10" style={{ aspectRatio: `${fit.w} / ${fit.h}`, maxHeight: "62svh" }}>
       <svg
         ref={svg}
         viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
@@ -410,7 +433,7 @@ function Room({ slug, ...props }: PlanProps & { slug: ZoneSlug }) {
         </clipPath>
         <Turned.Provider value={turned}>
           <g transform={turned ? "rotate(90)" : undefined} clipPath={`url(#${clip}-room)`}>
-            <Drawing {...props} close />
+            <Drawing {...props} close room={slug} />
           </g>
         </Turned.Provider>
       </svg>

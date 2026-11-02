@@ -68,6 +68,42 @@ function Chip({ on, disabled, onClick, children, label }: { on: boolean; disable
   );
 }
 
+/** The free tables written out room by room, for whoever would rather read than look at the plan. */
+function TableList({ tables, chosen, onChoose }: { tables: PlanTable[]; chosen: string | null; onChoose: (label: string) => void }) {
+  if (!tables.length) return null;
+  return (
+    <details className="group mt-3">
+      <summary className="ink-link w-fit cursor-pointer list-none text-lg text-pietra italic [&::-webkit-details-marker]:hidden">
+        The free tables, as a list <span className="inline-block transition group-open:rotate-90">›</span>
+      </summary>
+      <div className="mt-3 grid gap-x-8 gap-y-4 sm:grid-cols-3">
+        {ZONES.filter((z) => tables.some((t) => t.zone === z.slug)).map((z) => (
+          <div key={z.slug}>
+            <h3 className="font-display text-xs tracking-[0.24em] text-pietra uppercase">{z.name}</h3>
+            <ul className="mt-2 -mx-2 flex flex-col gap-1">
+              {tables
+                .filter((t) => t.zone === z.slug)
+                .map((t) => (
+                  <li key={t.label}>
+                    <button
+                      type="button"
+                      aria-pressed={t.label === chosen}
+                      onClick={() => onChoose(t.label)}
+                      className={`w-full rounded-sm px-2 py-1 text-left text-lg transition hover:bg-intonaco ${t.label === chosen ? "bg-accent text-intonaco hover:bg-accent" : ""}`}
+                    >
+                      <span className="font-display text-sm tracking-[0.14em]">{t.label}</span>{" "}
+                      <span className="italic">{describe(t, "free").split(", ").slice(1, -1).join(" · ")}</span>
+                    </button>
+                  </li>
+                ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 /**
  * The booking, as one page read top to bottom: the day and the party, the hour, the table on the
  * floor plan, and the name it goes under. Each step opens once the one before it is settled.
@@ -346,6 +382,15 @@ export function BookingFlow({
               onZone={setRail}
             />
           </div>
+
+          <TableList
+            tables={tables.filter((t) => states[t.label] === "free")}
+            chosen={chosen}
+            onChoose={(label) => {
+              setTable(label);
+              go("nome");
+            }}
+          />
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <p className="text-lg italic" aria-live="polite">

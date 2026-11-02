@@ -15,14 +15,29 @@ test("a couple picks a day, an hour and a table for two, and reaches the form", 
     await expect(page.getByRole("tab", { name: /^Sala/ })).toBeVisible();
   }
   const plan = page.getByRole("group", { name: isMobile ? /^La Sala/ : "Floor plan of the house" });
-  await expect(plan.locator('[data-state="free"]').first()).toBeVisible();
-  for (const label of await plan.locator('[data-state="free"]').evaluateAll((els) => els.map((e) => e.getAttribute("aria-label") ?? ""))) {
+  // Only this room's tables speak; the next room's, glimpsed at the edge, stay silent.
+  const free = plan.locator('[role="button"][data-state="free"]');
+  await expect(free.first()).toBeVisible();
+  for (const label of await free.evaluateAll((els) => els.map((e) => e.getAttribute("aria-label") ?? ""))) {
     expect(label).toMatch(/seats 1 to 2/);
   }
 
   await page.getByRole("button", { name: "Let La Volpe choose" }).click();
   await expect(page.getByRole("button", { name: "Conferma" })).toBeVisible();
   await expect(page.locator('input[name="email"]')).toBeVisible();
+});
+
+test("the free tables can be read as a list and chosen from it", async ({ page }) => {
+  await page.goto("/prenota");
+  await page.getByRole("listbox", { name: "Day" }).getByRole("option").and(page.locator(":enabled")).nth(2).click();
+  await page.getByRole("button", { name: /^\d\d:\d\d, \d+ tables? free/ }).first().click();
+
+  await page.getByText("The free tables, as a list").click();
+  const first = page.locator("#tavolo details").getByRole("button").first();
+  const label = (await first.locator("span").first().textContent())!;
+  await first.click();
+  await expect(page.getByText(`Table ${label},`)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Conferma" })).toBeVisible();
 });
 
 test("a closed Monday cannot be picked", async ({ page }) => {
