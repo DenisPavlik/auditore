@@ -32,7 +32,7 @@ function useMotionAllowed() {
  * and only the current season's file is fetched. The living loop fades in over
  * it once it is actually playing, fetched only after the page has loaded.
  */
-export function HeroScene({ className = "" }: { className?: string }) {
+export function HeroScene({ today, className = "" }: { today: Season; className?: string }) {
   const season = useSeason();
   const motionAllowed = useMotionAllowed();
   const loaded = usePageLoaded();
@@ -40,7 +40,14 @@ export function HeroScene({ className = "" }: { className?: string }) {
 
   return (
     <div aria-hidden className={`hero-scene ${className}`}>
-      <div className="hero-poster absolute inset-0" />
+      <div className="hero-poster absolute inset-0">
+        {/* Today's painting written into the page itself, so the browser asks for it before the
+            stylesheet arrives. A guest who picked another season keeps the stylesheet's choice. */}
+        <picture data-season-only={today}>
+          <source media="(width < 40rem)" srcSet={`/hero/${today}-phone.webp`} />
+          <img src={`/hero/${today}.webp`} alt="" fetchPriority="high" className="size-full object-cover object-(--hero-focus)" />
+        </picture>
+      </div>
       {season && motionAllowed && loaded && (
         <video
           key={season}

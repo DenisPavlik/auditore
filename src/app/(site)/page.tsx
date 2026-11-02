@@ -1,3 +1,4 @@
+import { cacheLife } from "next/cache";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 
@@ -10,13 +11,21 @@ import { Visit } from "@/components/home/visit";
 import { MenuLine } from "@/components/menu/menu-line";
 import { SiteHeader } from "@/components/site-header";
 import { getMenu } from "@/lib/menu";
-import { SEASON_LINES, SEASON_META, SEASONS } from "@/lib/seasons";
+import { SEASON_LINES, SEASON_META, SEASONS, seasonForDate } from "@/lib/seasons";
+
+/** The season on the restaurant's wall today, read again every hour. */
+async function seasonToday() {
+  "use cache";
+  cacheLife("hours");
+  return seasonForDate(new Date());
+}
 
 // The living hero, then the house: its story, the season's specials, the same
 // table through the year, the terrace today, and when and where to come.
 export default async function Home() {
   const menu = await getMenu();
   const specials = menu.find((c) => c.slug === "stagione")?.items ?? [];
+  const season = await seasonToday();
 
   return (
     <>
@@ -53,7 +62,7 @@ export default async function Home() {
         </div>
 
         {/* Desktop: the painting keeps its 16:9 and hangs from the right; extra width on wide screens stays paper. */}
-        <HeroScene className="relative mt-10 aspect-[4/3] w-full sm:aspect-video lg:absolute lg:inset-y-0 lg:right-0 lg:mt-0 lg:h-full lg:w-auto lg:max-w-full" />
+        <HeroScene today={season} className="relative mt-10 aspect-[4/3] w-full sm:aspect-video lg:absolute lg:inset-y-0 lg:right-0 lg:mt-0 lg:h-full lg:w-auto lg:max-w-full" />
         {/* A breath of the page's own paper behind the headline, so it reads over any season. */}
         <div
           aria-hidden

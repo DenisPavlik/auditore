@@ -53,9 +53,7 @@ export const SEASON_STORAGE_KEY = "auditore:season";
 
 /**
  * Runs in <head> before first paint so the page never flashes the wrong
- * season, and on the home page asks for the season's painting (the phone's
- * smaller one on a phone, as in .hero-poster) before the page is laid out.
- * Kept dependency-free because it is inlined as a string.
+ * season. Kept dependency-free because it is inlined as a string.
  */
 export const seasonBootScript = `(function(){try{
 var s=null;try{s=sessionStorage.getItem(${JSON.stringify(SEASON_STORAGE_KEY)})}catch(e){}
@@ -65,5 +63,4 @@ var m=+new Intl.DateTimeFormat("en",{timeZone:${JSON.stringify(RESTAURANT_TIME_Z
 s=m>=3&&m<=5?"spring":m>=6&&m<=8?"summer":m>=9&&m<=11?"autumn":"winter";
 }
 document.documentElement.dataset.season=s;
-if(location.pathname==="/"){var l=document.createElement("link");l.rel="preload";l.as="image";l.href="/hero/"+s+(matchMedia("(width < 40rem)").matches?"-phone":"")+".webp";l.fetchPriority="high";document.head.appendChild(l)}
 }catch(e){}})();`;
