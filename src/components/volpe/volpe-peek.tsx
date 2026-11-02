@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { usePageLoaded } from "@/components/atmosphere/use-page-loaded";
+
 import { volpe } from "./volpe-store";
 
 /** Same split as the moves: WebKit plays HEVC with alpha, everyone else VP9 alpha. */
@@ -21,11 +23,15 @@ export function VolpePeek() {
   const [ducked, setDucked] = useState(false);
   const [asking, setAsking] = useState(false);
   const [open, setOpen] = useState(volpe.get().open);
+  // He comes in once the page has loaded, so his loop never holds up the page.
+  const loaded = usePageLoaded();
 
   useEffect(() => volpe.subscribe(() => setOpen(volpe.get().open)), []);
 
   useEffect(() => {
+    if (!loaded) return;
     const el = video.current!;
+    el.poster = "/volpe/peek/sbircia.webp";
     el.src = source();
     void el.play().catch(() => {});
 
@@ -59,7 +65,7 @@ export function VolpePeek() {
       window.clearTimeout(idle);
       timers.forEach(window.clearTimeout);
     };
-  }, []);
+  }, [loaded]);
 
   const out = !shown || open;
 
@@ -80,12 +86,12 @@ export function VolpePeek() {
         playsInline
         loop
         preload="auto"
-        poster="/volpe/peek/sbircia.webp"
         aria-hidden
         className="volpe-peek-fox relative h-full w-auto"
       />
+      {/* Said aloud by the button's own name; the bubble is only for the eye. */}
       <span
-        aria-hidden={!asking}
+        aria-hidden
         data-asking={asking}
         className="volpe-peek-ask pointer-events-none absolute top-9 right-full mr-1 rounded-2xl rounded-br-sm bg-intonaco px-3.5 py-2 text-lg leading-tight whitespace-nowrap italic shadow-[0_10px_24px_-14px_rgb(42_32_25/0.7)] ring-1 ring-ink/15"
       >

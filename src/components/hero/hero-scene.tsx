@@ -2,6 +2,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 
+import { usePageLoaded } from "@/components/atmosphere/use-page-loaded";
 import { useSeason } from "@/components/season/use-season";
 import type { Season } from "@/lib/seasons";
 
@@ -29,17 +30,18 @@ function useMotionAllowed() {
  * The season's painting behind the hero. The still is a CSS background keyed
  * to html[data-season] (see .hero-poster), so it is right from the first paint
  * and only the current season's file is fetched. The living loop fades in over
- * it once it is actually playing.
+ * it once it is actually playing, fetched only after the page has loaded.
  */
 export function HeroScene({ className = "" }: { className?: string }) {
   const season = useSeason();
   const motionAllowed = useMotionAllowed();
+  const loaded = usePageLoaded();
   const [playing, setPlaying] = useState<Season | null>(null);
 
   return (
     <div aria-hidden className={`hero-scene ${className}`}>
       <div className="hero-poster absolute inset-0" />
-      {season && motionAllowed && (
+      {season && motionAllowed && loaded && (
         <video
           key={season}
           autoPlay
