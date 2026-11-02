@@ -54,6 +54,9 @@ export function HeroScene({ className = "" }: { className?: string }) {
             playing === season ? "opacity-100" : "opacity-0"
           }`}
         >
+          {/* A phone gets the loop at the size it can show, as it does the still. */}
+          <source media="(width < 40rem)" src={`/hero/${season}-phone.webm`} type="video/webm" />
+          <source media="(width < 40rem)" src={`/hero/${season}-phone.mp4`} type="video/mp4" />
           <source src={`/hero/${season}.webm`} type="video/webm" />
           <source src={`/hero/${season}.mp4`} type="video/mp4" />
         </video>
